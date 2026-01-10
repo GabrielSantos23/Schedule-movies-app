@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/client";
 import GroupsSidebar from "@/components/groups-sidebar";
-import GroupScheduler from "@/components/group-scheduler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Film, Loader2, Sparkles, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import GroupScheduler from "./group-scheduler";
 
 interface Group {
   id: string;
@@ -241,18 +241,14 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
     );
   }
 
-  // Has groups - show sidebar + content
   return (
     <div className="min-h-screen bg-background">
-      {/* Sidebar (desktop) / Header (mobile) */}
       <GroupsSidebar user={user} currentGroupId={groupId} />
 
-      {/* Main Content - offset by sidebar width on desktop, header height on mobile */}
       <div className="pt-16 md:pt-0 md:ml-[72px]">
         {groupId && selectedGroup ? (
           <GroupScheduler user={user} groupId={groupId} />
         ) : (
-          // No group selected - show selection prompt
           <div className="min-h-screen flex flex-col items-center justify-center">
             <div className="text-center space-y-4">
               <div className="h-16 w-16 mx-auto rounded-2xl bg-muted flex items-center justify-center">

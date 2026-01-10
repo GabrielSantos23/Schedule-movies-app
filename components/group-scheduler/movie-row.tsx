@@ -1,30 +1,29 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GroupSchedule } from "./types";
+import { User } from "@supabase/supabase-js";
 import { MovieCard } from "./movie-card";
-import type { User } from "@supabase/supabase-js";
 
 export function MovieRow({
   title,
-  icon: Icon,
   schedules,
   user,
-  onVote,
   onEdit,
   onDelete,
+  onToggleWatched,
   processingStates,
 }: {
   title: string;
-  icon: React.ElementType;
+  icon: any;
   schedules: GroupSchedule[];
   user: User;
-  onVote: (schedule: GroupSchedule) => void;
-  onEdit: (schedule: GroupSchedule) => void;
-  onDelete: (schedule: GroupSchedule) => void;
-  processingStates: Record<string, "vote" | "delete">;
+  onEdit: (s: GroupSchedule) => void;
+  onDelete: (s: GroupSchedule) => void;
+  onToggleWatched: (s: GroupSchedule) => void;
+  processingStates: Record<string, "vote" | "delete" | "watch">;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -53,9 +52,8 @@ export function MovieRow({
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
-      const scrollAmount = 400;
       scrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
+        left: direction === "left" ? -400 : 400,
         behavior: "smooth",
       });
     }
@@ -95,22 +93,21 @@ export function MovieRow({
           </Button>
         </div>
       </div>
-
       <div
         ref={scrollRef}
         className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {schedules.map((schedule) => (
+        {schedules.map((s) => (
           <MovieCard
-            key={schedule.id}
-            schedule={schedule}
+            key={s.id}
+            schedule={s}
             user={user}
-            onVote={() => onVote(schedule)}
-            onEdit={() => onEdit(schedule)}
-            onDelete={() => onDelete(schedule)}
-            isProcessing={!!processingStates[schedule.id]}
-            processingType={processingStates[schedule.id]}
+            onEdit={() => onEdit(s)}
+            onDelete={() => onDelete(s)}
+            onToggleWatched={() => onToggleWatched(s)}
+            isProcessing={!!processingStates[s.id]}
+            processingType={processingStates[s.id]}
           />
         ))}
       </div>

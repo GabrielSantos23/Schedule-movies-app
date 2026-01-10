@@ -1,40 +1,36 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Film, Trash2, Loader2, Pencil, Heart, Star, Tv } from "lucide-react";
+import { Film, Tv, Pencil, Trash2, Check, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { User } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 import { GroupSchedule, parseLocalDate } from "./types";
+import { User } from "@supabase/supabase-js";
+
+interface MovieCardProps {
+  schedule: GroupSchedule;
+  user: User;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleWatched: () => void;
+  isProcessing: boolean;
+  processingType?: "vote" | "delete" | "watch";
+}
 
 export function MovieCard({
   schedule,
   user,
-  onVote,
   onEdit,
   onDelete,
+  onToggleWatched,
   isProcessing,
   processingType,
-}: {
-  schedule: GroupSchedule;
-  user: User;
-  onVote: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  isProcessing: boolean;
-  processingType?: "vote" | "delete";
-}) {
+}: MovieCardProps) {
   const router = useRouter();
-  const hasVoted = schedule.schedule_votes?.some((v) => v.user_id === user.id);
-  const voteCount = schedule.schedule_votes?.length || 0;
   const isSeries = schedule.media_type === "tv";
 
   const handleCardClick = () => {
-    if (isSeries) {
-      router.push(`/series/${schedule.movie_id}`);
-    } else {
-      router.push(`/movie/${schedule.movie_id}`);
-    }
+    router.push(`/${isSeries ? "series" : "movie"}/${schedule.movie_id}`);
   };
 
   return (
@@ -59,7 +55,6 @@ export function MovieCard({
           </div>
         )}
 
-        {/* Overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">
             <div className="flex items-center gap-2">
@@ -73,8 +68,7 @@ export function MovieCard({
                 }}
                 disabled={isProcessing}
               >
-                <Pencil className="h-3 w-3" />
-                Edit
+                <Pencil className="h-3 w-3" /> Edit
               </Button>
               <Button
                 size="sm"
@@ -96,41 +90,48 @@ export function MovieCard({
           </div>
         </div>
 
-        {/* Vote button - always visible */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onVote();
-          }}
-          disabled={isProcessing}
-          className={`absolute top-2 right-2 h-8 w-8 rounded-full flex items-center justify-center transition-all ${
-            hasVoted
-              ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
-              : "bg-black/50 text-white/70 hover:bg-red-500 hover:text-white"
-          }`}
-        >
-          {processingType === "vote" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Heart className={`h-4 w-4 ${hasVoted ? "fill-current" : ""}`} />
-          )}
-        </button>
+        {!schedule.watched && (
+          <div
+            className="absolute top-2 left-2 flex gap-1 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {schedule.scheduled_date && (
+              <div className="px-2 py-1 rounded-md bg-primary/90 text-primary-foreground text-xs font-medium backdrop-blur-sm shadow-sm">
+                {format(parseLocalDate(schedule.scheduled_date), "MMM d")}
+              </div>
+            )}
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-6 w-6 rounded-full bg-black/50 hover:bg-green-500 hover:text-white backdrop-blur-sm border-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWatched();
+              }}
+            >
+              <Check className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
 
-        {/* Scheduled date badge */}
-        {schedule.scheduled_date && (
-          <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-primary/90 text-primary-foreground text-xs font-medium backdrop-blur-sm">
-            {format(parseLocalDate(schedule.scheduled_date), "MMM d")}
+        {schedule.watched && (
+          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur rounded-full px-2 py-1 flex items-center gap-1">
+            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+            <span className="text-white text-xs font-bold">
+              {schedule.rating || "-"}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Card info */}
       <div className="mt-3 space-y-1">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
-          <span className="font-medium">{voteCount}</span>
-          <span>•</span>
-          <span>{voteCount === 1 ? "1 vote" : `${voteCount} votes`}</span>
+          <span className="font-medium">
+            {schedule.vote_average ? schedule.vote_average.toFixed(1) : "N/A"}
+          </span>
+          <span className="text-muted-foreground/50">•</span>
+          <span>TMDB</span>
         </div>
         <h4 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
           {schedule.movie_title}
