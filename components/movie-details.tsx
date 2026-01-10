@@ -68,6 +68,13 @@ interface MovieDetails {
     poster_path: string | null;
     vote_average: number;
   }[];
+  providers: {
+    [key: string]: {
+      flatrate?: { provider_name: string; logo_path: string }[];
+      rent?: { provider_name: string; logo_path: string }[];
+      buy?: { provider_name: string; logo_path: string }[];
+    };
+  } | null;
 }
 
 function formatRuntime(minutes: number): string {
@@ -158,7 +165,7 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             />
           </div>
           <button
-            className="absolute top-4 right-4 text-white hover:text-primary transition-colors"
+            className="absolute top-4 right-4 text-foreground hover:text-primary transition-colors"
             onClick={() => setShowTrailer(false)}
           >
             ✕
@@ -190,7 +197,7 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             variant="ghost"
             size="sm"
             onClick={() => router.back()}
-            className="text-white/80 hover:text-white hover:bg-white/10"
+            className="text-muted-foreground hover:text-foreground hover:bg-card"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -203,18 +210,18 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             <div className="space-y-6 max-w-xl">
               {/* Title */}
               <div className="space-y-2">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                   {movie.title}
                 </h1>
                 {movie.tagline && (
-                  <p className="text-lg text-white/60 italic">
+                  <p className="text-lg text-muted-foreground/60 italic">
                     "{movie.tagline}"
                   </p>
                 )}
               </div>
 
               {/* Overview */}
-              <p className="text-white/80 text-base md:text-lg leading-relaxed line-clamp-4">
+              <p className="text-muted-foreground/80 text-base md:text-lg leading-relaxed line-clamp-4">
                 {movie.overview}
               </p>
 
@@ -242,12 +249,12 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                       </div>
                     ))}
                     {movie.credits.cast.length > 5 && (
-                      <div className="h-12 w-12 rounded-full border-2 border-background bg-muted/80 flex items-center justify-center text-sm font-medium text-white">
+                      <div className="h-12 w-12 rounded-full border-2 border-background bg-muted/80 flex items-center justify-center text-sm font-medium text-muted-foreground">
                         +{movie.credits.cast.length - 5}
                       </div>
                     )}
                   </div>
-                  <div className="text-white/60 text-sm">
+                  <div className="text-muted-foreground/60 text-sm">
                     {movie.credits.cast
                       .slice(0, 3)
                       .map((a) => a.name.split(" ")[0])
@@ -264,15 +271,15 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                   <div className="flex items-center gap-1 text-yellow-500">
                     <Star className="h-5 w-5 fill-current" />
                   </div>
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-2xl font-bold text-muted-foreground">
                     {movie.vote_average.toFixed(1)}
                   </span>
-                  <span className="text-white/50">/10</span>
+                  <span className="text-muted-foreground/50">/10</span>
                 </div>
 
                 {/* Runtime */}
                 {movie.runtime > 0 && (
-                  <div className="flex items-center gap-2 text-white/70">
+                  <div className="flex items-center gap-2 text-muted-foreground/70">
                     <Clock className="h-4 w-4" />
                     <span>{formatRuntime(movie.runtime)}</span>
                   </div>
@@ -280,7 +287,7 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
 
                 {/* Year */}
                 {movie.release_date && (
-                  <div className="flex items-center gap-2 text-white/70">
+                  <div className="flex items-center gap-2 text-muted-foreground/70">
                     <Calendar className="h-4 w-4" />
                     <span>{new Date(movie.release_date).getFullYear()}</span>
                   </div>
@@ -293,11 +300,60 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                   <Badge
                     key={genre.id}
                     variant="outline"
-                    className="border-white/30 text-white bg-white/10 hover:bg-white/20"
+                    className="border-muted-foreground/30 text-muted-foreground bg-muted-foreground/10 hover:bg-muted-foreground/20"
                   >
                     {genre.name}
                   </Badge>
                 ))}
+              </div>
+
+              {/* Streaming Providers */}
+              <div className="pt-4">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                  Available on
+                </h3>
+                {movie.providers ? (
+                  <div className="flex flex-wrap gap-4">
+                    {(() => {
+                      // Adjust based on the corrected interface (no .results)
+                      const country =
+                        (movie.providers as any).BR ||
+                        (movie.providers as any).US;
+                      // Safe cast or just access if interface matches.
+                      // Since I stripped 'results' from the interface, I should access directly.
+                      // But I must ensure runtime matches.
+                      const flatrate = country?.flatrate || [];
+
+                      if (flatrate.length === 0) {
+                        return (
+                          <span className="text-sm text-muted-foreground">
+                            Not available for streaming
+                          </span>
+                        );
+                      }
+
+                      return flatrate.map((provider: any) => (
+                        <div
+                          key={provider.provider_name}
+                          className="flex flex-col items-center gap-2"
+                          title={provider.provider_name}
+                        >
+                          <div className="h-10 w-10 rounded-lg overflow-hidden bg-white shadow-sm">
+                            <img
+                              src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
+                              alt={provider.provider_name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    No streaming information available
+                  </span>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -305,7 +361,7 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                 {movie.trailer && (
                   <Button
                     size="lg"
-                    className="gap-2 bg-white text-black hover:bg-white/90"
+                    className="gap-2 bg-card text-foreground hover:bg-card/90"
                     onClick={() => setShowTrailer(true)}
                   >
                     <Play className="h-5 w-5 fill-current" />

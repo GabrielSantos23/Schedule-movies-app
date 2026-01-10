@@ -257,7 +257,7 @@ export default function GroupsSidebar({
             href={`/groups/${group.id}`}
             className={`relative h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl flex items-center justify-center font-semibold text-xs md:text-sm transition-all hover:scale-105 flex-shrink-0 ${
               isActive
-                ? "bg-transparent border-2 border-violet-500 text-violet-500 shadow-lg shadow-violet-500/20"
+                ? "bg-transparent border-2 border-border text-primary shadow-lg shadow-violet-500/20"
                 : "bg-muted hover:bg-muted/80 text-foreground border border-border/50"
             }`}
           >
@@ -315,6 +315,7 @@ export default function GroupsSidebar({
                 placeholder="Family Movie Night"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
+                maxLength={50}
               />
             </div>
             <div className="space-y-2">
@@ -325,6 +326,7 @@ export default function GroupsSidebar({
                 value={newGroupDescription}
                 onChange={(e) => setNewGroupDescription(e.target.value)}
                 rows={3}
+                maxLength={100}
               />
             </div>
             <Button
@@ -362,6 +364,7 @@ export default function GroupsSidebar({
                 placeholder="Group name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
+                maxLength={50}
               />
             </div>
             <div className="space-y-2">
@@ -372,6 +375,7 @@ export default function GroupsSidebar({
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 rows={3}
+                maxLength={100}
               />
             </div>
             <div className="flex gap-2 justify-end">
@@ -462,7 +466,9 @@ export default function GroupsSidebar({
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={10}>
-                    <p className="font-medium">{group.name}</p>
+                    <p className="font-medium max-w-[200px] truncate">
+                      {group.name}
+                    </p>
                     {group.description && (
                       <p className="text-xs text-muted-foreground max-w-[200px] truncate">
                         {group.description}

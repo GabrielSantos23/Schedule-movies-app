@@ -20,18 +20,24 @@ export async function GET(
 
   try {
     // Fetch TV show details with credits, videos, and similar shows
-    const [tvRes, creditsRes, videosRes, similarRes] = await Promise.all([
-      fetch(`${TMDB_BASE_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=en-US`),
-      fetch(
-        `${TMDB_BASE_URL}/tv/${id}/credits?api_key=${TMDB_API_KEY}&language=en-US`
-      ),
-      fetch(
-        `${TMDB_BASE_URL}/tv/${id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
-      ),
-      fetch(
-        `${TMDB_BASE_URL}/tv/${id}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`
-      ),
-    ]);
+    const [tvRes, creditsRes, videosRes, similarRes, providersRes] =
+      await Promise.all([
+        fetch(
+          `${TMDB_BASE_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=en-US`
+        ),
+        fetch(
+          `${TMDB_BASE_URL}/tv/${id}/credits?api_key=${TMDB_API_KEY}&language=en-US`
+        ),
+        fetch(
+          `${TMDB_BASE_URL}/tv/${id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
+        ),
+        fetch(
+          `${TMDB_BASE_URL}/tv/${id}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`
+        ),
+        fetch(
+          `${TMDB_BASE_URL}/tv/${id}/watch/providers?api_key=${TMDB_API_KEY}`
+        ),
+      ]);
 
     if (!tvRes.ok) {
       throw new Error("Failed to fetch TV show details");
@@ -41,6 +47,7 @@ export async function GET(
     const credits = await creditsRes.json();
     const videos = await videosRes.json();
     const similar = await similarRes.json();
+    const providers = await providersRes.json();
 
     // Fetch season details if a specific season is requested
     let seasonDetails = null;
@@ -85,6 +92,7 @@ export async function GET(
         : null,
       similar: similar.results?.slice(0, 8) || [],
       currentSeason: seasonDetails,
+      providers: providers.results || null,
     });
   } catch (error) {
     return NextResponse.json(
