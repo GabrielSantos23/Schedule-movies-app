@@ -258,9 +258,7 @@ export default function GroupsSidebar({
             href={`/groups/${group.id}`}
             className={`relative h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl flex items-center justify-center font-semibold text-xs md:text-sm transition-all hover:scale-105 flex-shrink-0 ${
               isActive
-                ? `bg-gradient-to-br ${getGroupColor(
-                    group.name
-                  )} text-white shadow-lg`
+                ? "bg-transparent border-2 border-violet-500 text-violet-500 shadow-lg shadow-violet-500/20"
                 : "bg-muted hover:bg-muted/80 text-foreground border border-border/50"
             }`}
           >
