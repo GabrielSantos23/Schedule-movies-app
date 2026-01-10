@@ -36,6 +36,7 @@ import {
   ListVideo,
   Clock,
   Sparkles,
+  Tv,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -56,11 +57,14 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Movie {
   id: number;
-  title: string;
+  title?: string;
+  name?: string; // For TV series
   overview: string;
   poster_path: string | null;
-  release_date: string;
+  release_date?: string;
+  first_air_date?: string; // For TV series
   vote_average: number;
+  media_type?: "movie" | "tv";
 }
 
 interface GroupSchedule {
@@ -73,6 +77,7 @@ interface GroupSchedule {
   user_id: string;
   user_email?: string;
   schedule_votes?: { user_id: string }[];
+  media_type?: "movie" | "tv";
 }
 
 interface Group {
@@ -115,9 +120,14 @@ function MovieCard({
   const router = useRouter();
   const hasVoted = schedule.schedule_votes?.some((v) => v.user_id === user.id);
   const voteCount = schedule.schedule_votes?.length || 0;
+  const isSeries = schedule.media_type === "tv";
 
   const handleCardClick = () => {
-    router.push(`/movie/${schedule.movie_id}`);
+    if (isSeries) {
+      router.push(`/series/${schedule.movie_id}`);
+    } else {
+      router.push(`/movie/${schedule.movie_id}`);
+    }
   };
 
   return (
@@ -134,7 +144,11 @@ function MovieCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-            <Film className="h-12 w-12 text-muted-foreground/30" />
+            {isSeries ? (
+              <Tv className="h-12 w-12 text-muted-foreground/30" />
+            ) : (
+              <Film className="h-12 w-12 text-muted-foreground/30" />
+            )}
           </div>
         )}
 
@@ -415,20 +429,24 @@ export default function GroupScheduler({
   };
 
   const scheduleMovie = async (movie: Movie) => {
+    const title = movie.title || movie.name || "Unknown";
+    const mediaType = movie.media_type || "movie";
+
     const { error } = await supabase.from("group_schedules").insert({
       group_id: groupId,
       user_id: user.id,
       movie_id: movie.id,
-      movie_title: movie.title,
+      movie_title: title,
       movie_poster: movie.poster_path,
       movie_overview: movie.overview,
       scheduled_date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : null,
+      media_type: mediaType,
     });
     if (error) {
       if (error.code === "23505") {
-        setError("This movie is already in the list");
+        setError("This item is already in the list");
       } else {
-        setError("Failed to add movie");
+        setError("Failed to add item");
       }
       return;
     }
@@ -599,7 +617,7 @@ export default function GroupScheduler({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by title..."
+                  placeholder="Search movies and series..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && searchMovies()}
@@ -621,84 +639,114 @@ export default function GroupScheduler({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {movies
                   .slice(resultsPage * 6, (resultsPage + 1) * 6)
-                  .map((movie) => (
-                    <div key={movie.id} className="group cursor-pointer">
-                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-muted shadow-md transition-all group-hover:shadow-xl group-hover:-translate-y-1">
-                        {movie.poster_path ? (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Film className="h-8 w-8 opacity-20" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                          <div className="flex gap-2 w-full">
-                            <Button
-                              size="sm"
-                              className="flex-1 h-8 text-xs"
-                              onClick={() => {
-                                scheduleMovie(movie);
-                                setIsAddMovieOpen(false);
-                              }}
-                            >
-                              <Plus className="h-3 w-3 mr-1" /> Add
-                            </Button>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <CalendarIcon className="h-3.5 w-3.5" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="w-auto p-0">
-                                <Calendar
-                                  mode="single"
-                                  selected={selectedDate}
-                                  onSelect={setSelectedDate}
-                                  disabled={{ before: new Date() }}
-                                  className="rounded-md border m-4"
-                                />
-                                <div className="p-3 border-t bg-muted/50 flex justify-end">
+                  .map((movie) => {
+                    const displayTitle = movie.title || movie.name || "Unknown";
+                    const releaseYear = (
+                      movie.release_date || movie.first_air_date
+                    )?.split("-")[0];
+                    const isTvSeries = movie.media_type === "tv";
+
+                    return (
+                      <div
+                        key={`${movie.media_type}-${movie.id}`}
+                        className="group cursor-pointer"
+                      >
+                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-muted shadow-md transition-all group-hover:shadow-xl group-hover:-translate-y-1">
+                          {movie.poster_path ? (
+                            <img
+                              src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              {isTvSeries ? (
+                                <Tv className="h-8 w-8 opacity-20" />
+                              ) : (
+                                <Film className="h-8 w-8 opacity-20" />
+                              )}
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                            <div className="flex gap-2 w-full">
+                              <Button
+                                size="sm"
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => {
+                                  scheduleMovie(movie);
+                                  setIsAddMovieOpen(false);
+                                }}
+                              >
+                                <Plus className="h-3 w-3 mr-1" /> Add
+                              </Button>
+                              <Dialog>
+                                <DialogTrigger asChild>
                                   <Button
+                                    variant="secondary"
                                     size="sm"
-                                    onClick={() => {
-                                      scheduleMovie(movie);
-                                      setIsAddMovieOpen(false);
-                                    }}
+                                    className="h-8 w-8 p-0"
                                   >
-                                    Confirm & Add
+                                    <CalendarIcon className="h-3.5 w-3.5" />
                                   </Button>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
+                                </DialogTrigger>
+                                <DialogContent className="w-auto p-0">
+                                  <Calendar
+                                    mode="single"
+                                    selected={selectedDate}
+                                    onSelect={setSelectedDate}
+                                    disabled={{ before: new Date() }}
+                                    className="rounded-md border m-4"
+                                  />
+                                  <div className="p-3 border-t bg-muted/50 flex justify-end">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        scheduleMovie(movie);
+                                        setIsAddMovieOpen(false);
+                                      }}
+                                    >
+                                      Confirm & Add
+                                    </Button>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            </div>
+                          </div>
+                          {/* Rating badge */}
+                          <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-xs font-medium flex items-center gap-1">
+                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                            {movie.vote_average?.toFixed(1)}
+                          </div>
+                          {/* Media type badge */}
+                          <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-xs font-medium flex items-center gap-1">
+                            {isTvSeries ? (
+                              <>
+                                <Tv className="h-3 w-3" />
+                                <span>Series</span>
+                              </>
+                            ) : (
+                              <>
+                                <Film className="h-3 w-3" />
+                                <span>Movie</span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-xs font-medium flex items-center gap-1">
-                          <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                          {movie.vote_average?.toFixed(1)}
+                        <div className="mt-2">
+                          <p className="text-sm font-medium line-clamp-1">
+                            {displayTitle}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {releaseYear}
+                          </p>
                         </div>
                       </div>
-                      <div className="mt-2">
-                        <p className="text-sm font-medium line-clamp-1">
-                          {movie.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {movie.release_date?.split("-")[0]}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground space-y-4 py-12 opacity-50">
                 <Film className="h-12 w-12" />
-                <p>Search for movies to add to your list.</p>
+                <p>Search for movies and series to add to your list.</p>
               </div>
             )}
           </ScrollArea>

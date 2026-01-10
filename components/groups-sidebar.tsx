@@ -435,7 +435,7 @@ export default function GroupsSidebar({
           {/* Logo */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 mb-2 flex-shrink-0">
+              <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 mb-2 flex-shrink-0">
                 <Film className="h-6 w-6" />
               </div>
             </TooltipTrigger>
