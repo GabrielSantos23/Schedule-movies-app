@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   ContextMenu,
@@ -290,59 +289,62 @@ export default function GroupsSidebar({
     );
   };
 
-  // Create button shared component
+  // Create button shared component - only the trigger button
   const CreateButton = () => (
-    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-      <DialogTrigger asChild>
-        <button className="h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all hover:scale-105 flex-shrink-0">
-          <Plus className="h-5 w-5 md:h-6 md:w-6" />
-        </button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create New Group</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Group Name</Label>
-            <Input
-              id="name"
-              placeholder="Family Movie Night"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              placeholder="A group for scheduling family movie nights"
-              value={newGroupDescription}
-              onChange={(e) => setNewGroupDescription(e.target.value)}
-              rows={3}
-            />
-          </div>
-          <Button
-            onClick={createGroup}
-            disabled={isCreating || !newGroupName.trim()}
-            className="w-full"
-          >
-            {isCreating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Create Group"
-            )}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <button
+      onClick={() => setIsCreateDialogOpen(true)}
+      className="h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all hover:scale-105 flex-shrink-0"
+    >
+      <Plus className="h-5 w-5 md:h-6 md:w-6" />
+    </button>
   );
 
   return (
     <>
+      {/* Create Group Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Group</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-name">Group Name</Label>
+              <Input
+                id="create-name"
+                placeholder="Family Movie Night"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-description">Description (Optional)</Label>
+              <Textarea
+                id="create-description"
+                placeholder="A group for scheduling family movie nights"
+                value={newGroupDescription}
+                onChange={(e) => setNewGroupDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <Button
+              onClick={createGroup}
+              disabled={isCreating || !newGroupName.trim()}
+              className="w-full"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Group"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Group Dialog */}
       <Dialog
         open={!!editingGroup}
