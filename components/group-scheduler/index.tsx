@@ -186,6 +186,14 @@ export default function GroupScheduler({
     loadSchedules();
   };
 
+  const moveToWatchlist = async (s: GroupSchedule) => {
+    await supabase
+      .from("group_schedules")
+      .update({ watched: false })
+      .eq("id", s.id);
+    loadSchedules();
+  };
+
   const generateInviteLink = async () => {
     const code = Math.random().toString(36).substring(2, 10).toUpperCase();
     await supabase
