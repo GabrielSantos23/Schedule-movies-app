@@ -12,6 +12,14 @@ export interface Movie {
   media_type?: "movie" | "tv";
 }
 
+export interface ScheduleInterest {
+  id: string;
+  schedule_id: string;
+  user_id: string;
+  interested: boolean;
+  profiles?: { email: string; full_name?: string; avatar_url?: string };
+}
+
 export interface GroupSchedule {
   id: string;
   movie_id: number;
@@ -22,6 +30,7 @@ export interface GroupSchedule {
   user_id: string;
   user_email?: string;
   schedule_votes?: { user_id: string }[];
+  schedule_interests?: ScheduleInterest[];
   media_type?: "movie" | "tv";
   watched?: boolean;
   rating?: number | null;
@@ -40,7 +49,25 @@ export interface Member {
   id: string;
   user_id: string;
   role: string;
-  profiles?: { email: string };
+  profiles?: { email: string; full_name?: string; avatar_url?: string };
+}
+
+export interface GroupActivity {
+  id: string;
+  group_id: string;
+  user_id: string;
+  action:
+    | "added_movie"
+    | "removed_movie"
+    | "marked_watched"
+    | "showed_interest"
+    | "joined_group"
+    | "scheduled_movie"
+    | "updated_group"
+    | "removed_date";
+  movie_title?: string;
+  created_at: string;
+  profiles?: { email: string; full_name?: string; avatar_url?: string };
 }
 
 export function parseLocalDate(dateStr: string): Date {

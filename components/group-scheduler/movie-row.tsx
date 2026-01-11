@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GroupSchedule } from "./types";
+import { GroupSchedule, Member } from "./types";
 import { User } from "@supabase/supabase-js";
 import { MovieCard } from "./movie-card";
 
@@ -14,7 +14,10 @@ export function MovieRow({
   onEdit,
   onDelete,
   onToggleWatched,
+  onToggleInterest,
   processingStates,
+  totalMembers,
+  members,
 }: {
   title: string;
   icon: any;
@@ -23,7 +26,13 @@ export function MovieRow({
   onEdit: (s: GroupSchedule) => void;
   onDelete: (s: GroupSchedule) => void;
   onToggleWatched: (s: GroupSchedule) => void;
+  onToggleInterest: (
+    scheduleId: string,
+    currentlyInterested: boolean | null
+  ) => void;
   processingStates: Record<string, "vote" | "delete" | "watch">;
+  totalMembers: number;
+  members?: Member[];
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -106,8 +115,13 @@ export function MovieRow({
             onEdit={() => onEdit(s)}
             onDelete={() => onDelete(s)}
             onToggleWatched={() => onToggleWatched(s)}
+            onToggleInterest={(currentlyInterested) =>
+              onToggleInterest(s.id, currentlyInterested)
+            }
             isProcessing={!!processingStates[s.id]}
             processingType={processingStates[s.id]}
+            totalMembers={totalMembers}
+            members={members}
           />
         ))}
       </div>

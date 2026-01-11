@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/client";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { User } from "@supabase/supabase-js";
 import {
   CalendarIcon,
@@ -21,6 +21,7 @@ import {
   Clock,
   Sparkles,
   Tv,
+  Activity,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,10 +46,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-import { Movie, GroupSchedule, Group, Member, parseLocalDate } from "./types";
+import {
+  Movie,
+  GroupSchedule,
+  Group,
+  Member,
+  GroupActivity,
+  parseLocalDate,
+} from "./types";
 import { MovieRow } from "./movie-row";
+import { ActivityFeed } from "./activity-feed";
 
 export default function GroupScheduler({
   user,
@@ -79,21 +94,22 @@ export default function GroupScheduler({
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"watchlist" | "history">(
-    "watchlist"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "watchlist" | "history" | "activity"
+  >("watchlist");
   const [editingSchedule, setEditingSchedule] = useState<GroupSchedule | null>(
     null
   );
   const [editDate, setEditDate] = useState<Date | undefined>(undefined);
+  const [activities, setActivities] = useState<GroupActivity[]>([]);
 
   const supabase = createClient();
 
-  // --- EFEITOS E CARREGAMENTO ---
   useEffect(() => {
     loadGroup();
     loadMembers();
     loadSchedules();
+    loadActivities();
   }, [groupId]);
 
   const loadGroup = async () => {
@@ -106,20 +122,80 @@ export default function GroupScheduler({
   };
 
   const loadMembers = async () => {
-    const { data } = await supabase
+    // 1. Get group members
+    const { data: membersData, error: membersError } = await supabase
       .from("group_members")
       .select("id, user_id, role")
       .eq("group_id", groupId);
-    if (data) setMembers(data);
+
+    if (membersError || !membersData) {
+      console.error("Error loading members:", membersError);
+      return;
+    }
+
+    // 2. Get profiles for these users
+    const userIds = membersData.map((m) => m.user_id);
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, email, full_name, avatar_url")
+      .in("id", userIds);
+
+    // 3. Merge data
+    const membersWithProfiles = membersData.map((member) => {
+      const profile = profilesData?.find((p) => p.id === member.user_id);
+      return {
+        ...member,
+        profiles: profile,
+      };
+    });
+
+    setMembers(membersWithProfiles as any);
   };
 
   const loadSchedules = async () => {
     const { data } = await supabase
       .from("group_schedules")
-      .select("*, schedule_votes(user_id)")
+      .select(
+        "*, schedule_votes(user_id), schedule_interests(id, user_id, interested)"
+      )
       .eq("group_id", groupId)
       .order("scheduled_date", { ascending: true });
     setSchedules(data || []);
+  };
+
+  const loadActivities = async () => {
+    const { data } = await supabase
+      .from("group_activities")
+      .select("*")
+      .eq("group_id", groupId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data) setActivities(data as any);
+  };
+
+  const logActivity = async (
+    action: GroupActivity["action"],
+    movieTitle?: string
+  ) => {
+    const { error } = await supabase.from("group_activities").insert({
+      group_id: groupId,
+      user_id: user.id,
+      action,
+      movie_title: movieTitle,
+    });
+
+    if (error) {
+      console.error("Error logging activity:", error);
+    }
+
+    // Refresh activities quietly
+    const { data } = await supabase
+      .from("group_activities")
+      .select("*")
+      .eq("group_id", groupId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data) setActivities(data as any);
   };
 
   // --- AÇÕES ---
@@ -185,14 +261,16 @@ export default function GroupScheduler({
       vote_average: movie.vote_average,
     });
     if (!error) {
+      logActivity("added_movie", movie.title || movie.name);
       loadSchedules();
       setSelectedDate(undefined);
     }
   };
 
-  const removeSchedule = async (id: string) => {
+  const removeSchedule = async (id: string, movieTitle?: string) => {
     setProcessingStates((prev) => ({ ...prev, [id]: "delete" }));
     await supabase.from("group_schedules").delete().eq("id", id);
+    if (movieTitle) logActivity("removed_movie", movieTitle);
     loadSchedules();
     setProcessingStates((prev) => {
       const n = { ...prev };
@@ -209,6 +287,13 @@ export default function GroupScheduler({
         scheduled_date: editDate ? format(editDate, "yyyy-MM-dd") : null,
       })
       .eq("id", editingSchedule.id);
+
+    if (editDate) {
+      logActivity("scheduled_movie", editingSchedule.movie_title);
+    } else if (editingSchedule.scheduled_date) {
+      logActivity("removed_date", editingSchedule.movie_title);
+    }
+
     setEditingSchedule(null);
     loadSchedules();
   };
@@ -218,6 +303,7 @@ export default function GroupScheduler({
       .from("group_schedules")
       .update({ watched: true, scheduled_date: null })
       .eq("id", s.id);
+    logActivity("marked_watched", s.movie_title);
     loadSchedules();
   };
 
@@ -243,6 +329,34 @@ export default function GroupScheduler({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const toggleInterest = async (
+    scheduleId: string,
+    currentlyInterested: boolean | null
+  ) => {
+    if (currentlyInterested === null) {
+      // No interest record exists, create one
+      await supabase.from("schedule_interests").insert({
+        schedule_id: scheduleId,
+        user_id: user.id,
+        interested: true,
+      });
+    } else {
+      // Toggle existing interest
+      await supabase
+        .from("schedule_interests")
+        .update({ interested: !currentlyInterested })
+        .eq("schedule_id", scheduleId)
+        .eq("user_id", user.id);
+    }
+
+    if (currentlyInterested === null) {
+      const schedule = schedules.find((s) => s.id === scheduleId);
+      if (schedule) logActivity("showed_interest", schedule.movie_title);
+    }
+
+    loadSchedules();
   };
 
   // --- FILTROS ---
@@ -425,7 +539,11 @@ export default function GroupScheduler({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
-                scheduleToDelete && removeSchedule(scheduleToDelete.id)
+                scheduleToDelete &&
+                removeSchedule(
+                  scheduleToDelete.id,
+                  scheduleToDelete.movie_title
+                )
               }
               className="bg-destructive"
             >
@@ -471,7 +589,63 @@ export default function GroupScheduler({
         {/* STATS BAR (SEU HEADER ORIGINAL) */}
         <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4" /> <span>{members.length} members</span>
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <div className="flex items-center gap-2 cursor-help hover:text-foreground transition-colors">
+                  <Users className="h-4 w-4" />{" "}
+                  <span>{members.length} members</span>
+                </div>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-60">
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Group Members</h4>
+                  <div className="grid gap-2">
+                    <ScrollArea className="h-[200px]">
+                      {members.map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between text-sm py-1"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              {member.profiles?.avatar_url && (
+                                <AvatarImage src={member.profiles.avatar_url} />
+                              )}
+                              <AvatarFallback className="text-[10px]">
+                                {(
+                                  member.profiles?.full_name ||
+                                  member.profiles?.email ||
+                                  "?"
+                                )
+                                  .substring(0, 2)
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate max-w-[140px]">
+                              {member.user_id === user.id
+                                ? "You"
+                                : member.profiles?.full_name ||
+                                  (member.profiles?.email &&
+                                    member.profiles.email
+                                      .split("@")[0]
+                                      .charAt(0)
+                                      .toUpperCase() +
+                                      member.profiles.email
+                                        .split("@")[0]
+                                        .slice(1)) ||
+                                  "Member"}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground capitalize">
+                            {member.role}
+                          </span>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
           </div>
           <div className="flex items-center gap-2">
             <Film className="h-4 w-4" /> <span>{schedules.length} movies</span>
@@ -523,7 +697,7 @@ export default function GroupScheduler({
 
         {/* TABS */}
         <div className="mt-6 flex items-center gap-4 border-b border-border/50">
-          {["watchlist", "history"].map((tab) => (
+          {["watchlist", "history", "activity"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -540,8 +714,8 @@ export default function GroupScheduler({
         </div>
 
         {/* LISTAS */}
-        {activeTab === "watchlist" ? (
-          schedules.filter((s) => !s.watched).length === 0 ? (
+        {activeTab === "watchlist" &&
+          (schedules.filter((s) => !s.watched).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-6">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
@@ -577,7 +751,10 @@ export default function GroupScheduler({
                 }}
                 onDelete={setScheduleToDelete}
                 onToggleWatched={markAsWatched}
+                onToggleInterest={toggleInterest}
                 processingStates={processingStates}
+                totalMembers={members.length}
+                members={members}
               />
               <MovieRow
                 title="Watchlist"
@@ -590,11 +767,16 @@ export default function GroupScheduler({
                 }}
                 onDelete={setScheduleToDelete}
                 onToggleWatched={markAsWatched}
+                onToggleInterest={toggleInterest}
                 processingStates={processingStates}
+                totalMembers={members.length}
+                members={members}
               />
             </>
-          )
-        ) : (
+          ))}
+
+        {/* HISTORY */}
+        {activeTab === "history" && (
           <MovieRow
             title="History"
             icon={Check}
@@ -603,8 +785,98 @@ export default function GroupScheduler({
             onEdit={() => {}}
             onDelete={setScheduleToDelete}
             onToggleWatched={moveToWatchlist}
+            onToggleInterest={toggleInterest}
             processingStates={processingStates}
+            totalMembers={members.length}
           />
+        )}
+
+        {/* ACTIVITY */}
+        {activeTab === "activity" && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
+              <Activity className="h-5 w-5 text-primary" />
+              Recent Activity
+            </h3>
+
+            {activities.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">
+                No recent activity
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {activities.map((activity) => {
+                  const userName =
+                    activity.user_id === user.id
+                      ? "You"
+                      : activity.profiles?.full_name ||
+                        activity.profiles?.email?.split("@")[0] ||
+                        "Someone";
+
+                  const userInitial = userName.charAt(0).toUpperCase();
+
+                  return (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border/40">
+                        <span className="text-xs font-bold text-primary">
+                          {userInitial}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-foreground">
+                            {userName}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground/60">
+                            •{" "}
+                            {formatDistanceToNow(
+                              new Date(activity.created_at),
+                              {
+                                addSuffix: true,
+                              }
+                            )}
+                          </span>
+                        </div>
+
+                        <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
+                          {activity.action === "added_movie" && "added "}
+                          {activity.action === "removed_movie" && "removed "}
+                          {activity.action === "marked_watched" && (
+                            <>
+                              marked{" "}
+                              <span className="text-emerald-500 font-medium">
+                                watched
+                              </span>{" "}
+                            </>
+                          )}
+                          {activity.action === "showed_interest" &&
+                            "is interested in "}
+                          {activity.action === "joined_group" &&
+                            "joined the group"}
+                          {activity.action === "scheduled_movie" &&
+                            "scheduled "}
+
+                          {activity.movie_title && (
+                            <span className="text-primary font-medium hover:underline cursor-pointer">
+                              {activity.movie_title}
+                            </span>
+                          )}
+
+                          <span className="block text-[10px] text-muted-foreground/40 mt-1 uppercase tracking-wider">
+                            {new Date(activity.created_at).toLocaleTimeString(
+                              [],
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>

@@ -1,14 +1,30 @@
 "use client";
 
 import { format } from "date-fns";
-import { Film, Tv, Pencil, Trash2, Check, Star, Loader2 } from "lucide-react";
+import {
+  Film,
+  Tv,
+  Pencil,
+  Trash2,
+  Check,
+  Star,
+  Loader2,
+  Heart,
+  Users2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { GroupSchedule, parseLocalDate } from "./types";
+import { GroupSchedule, parseLocalDate, Member } from "./types";
 import { User } from "@supabase/supabase-js";
 import { useTransitionRouter } from "next-view-transitions";
 import { StarRating } from "../StarRating";
 import { useTheme } from "next-themes";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MovieCardProps {
   schedule: GroupSchedule;
@@ -16,8 +32,11 @@ interface MovieCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggleWatched: () => void;
+  onToggleInterest: (currentlyInterested: boolean | null) => void;
   isProcessing: boolean;
   processingType?: "vote" | "delete" | "watch";
+  totalMembers?: number;
+  members?: Member[];
 }
 
 export function MovieCard({
@@ -26,8 +45,11 @@ export function MovieCard({
   onEdit,
   onDelete,
   onToggleWatched,
+  onToggleInterest,
   isProcessing,
   processingType,
+  totalMembers = 0,
+  members = [],
 }: MovieCardProps) {
   const router = useTransitionRouter();
   const isSeries = schedule.media_type === "tv";
@@ -38,8 +60,29 @@ export function MovieCard({
   };
 
   const rating = schedule.vote_average || 0;
-
   const isDark = (theme || resolvedTheme) === "dark";
+
+  // Interest logic
+  const interests = schedule.schedule_interests || [];
+  const interestedUsers = interests.filter((i) => i.interested);
+  const myInterest = interests.find((i) => i.user_id === user.id);
+  const amIInterested = myInterest?.interested ?? null;
+  const interestCount = interestedUsers.length;
+
+  // Get names of interested users
+  const interestedUserNames = interestedUsers.map((i, index) => {
+    if (i.user_id === user.id) return "You";
+    const member = members.find((m) => m.user_id === i.user_id);
+    if (member) {
+      // Fallback hierarchy: full_name -> email prefix -> Member + index
+      return (
+        member.profiles?.full_name ||
+        member.profiles?.email?.split("@")[0] ||
+        `Member ${index + 1}`
+      );
+    }
+    return `Member ${index + 1}`;
+  });
   return (
     <div className="group flex-shrink-0 w-[160px] md:w-[180px]">
       <div
@@ -119,6 +162,61 @@ export function MovieCard({
               <Check className="h-3 w-3" />
             </Button>
           </div>
+        )}
+
+        {/* Interest indicator - top right */}
+        {!schedule.watched && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="absolute top-2 right-2 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleInterest(amIInterested);
+                  }}
+                >
+                  <div
+                    className={`flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-sm shadow-sm transition-colors ${
+                      amIInterested === true
+                        ? "bg-pink-500/90 text-white"
+                        : "bg-black/50 text-white/80 hover:bg-pink-500/70"
+                    }`}
+                  >
+                    <Heart
+                      className={`h-3 w-3 ${
+                        amIInterested === true ? "fill-current" : ""
+                      }`}
+                    />
+                    {interestCount > 0 && (
+                      <span className="text-xs font-medium">
+                        {interestCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <div className="text-xs space-y-1">
+                  <p className="font-medium">
+                    {amIInterested === true
+                      ? "Click to remove your interest"
+                      : "Click to show interest"}
+                  </p>
+                  {interestCount > 0 && (
+                    <div className="pt-1 border-t border-border/50">
+                      <p className="text-muted-foreground mb-1">Interested:</p>
+                      <p className="font-medium">
+                        {interestedUserNames.slice(0, 5).join(", ")}
+                        {interestedUserNames.length > 5 &&
+                          ` +${interestedUserNames.length - 5} more`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
 
         {schedule.watched && (
