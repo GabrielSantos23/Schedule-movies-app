@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { GroupSchedule, parseLocalDate } from "./types";
 import { User } from "@supabase/supabase-js";
+import { useTransitionRouter } from "next-view-transitions";
+import { StarRating } from "../StarRating";
+import { useTheme } from "next-themes";
 
 interface MovieCardProps {
   schedule: GroupSchedule;
@@ -26,13 +29,17 @@ export function MovieCard({
   isProcessing,
   processingType,
 }: MovieCardProps) {
-  const router = useRouter();
+  const router = useTransitionRouter();
   const isSeries = schedule.media_type === "tv";
+  const { theme, resolvedTheme } = useTheme();
 
   const handleCardClick = () => {
     router.push(`/${isSeries ? "series" : "movie"}/${schedule.movie_id}`);
   };
 
+  const rating = schedule.vote_average || 0;
+
+  const isDark = (theme || resolvedTheme) === "dark";
   return (
     <div className="group flex-shrink-0 w-[160px] md:w-[180px]">
       <div
@@ -126,16 +133,31 @@ export function MovieCard({
 
       <div className="mt-3 space-y-1">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+          <StarRating
+            rating={rating}
+            size={10}
+            color={isDark ? "#80ffff" : "#0080ff"}
+          />
           <span className="font-medium">
             {schedule.vote_average ? schedule.vote_average.toFixed(1) : "N/A"}
           </span>
           <span className="text-muted-foreground/50">•</span>
           <span>TMDB</span>
         </div>
-        <h4 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
-          {schedule.movie_title}
-        </h4>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <h4 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+            {schedule.movie_title}
+          </h4>
+          <span className="text-xs text-muted-foreground">
+            (
+            {schedule.release_date || schedule.first_air_date
+              ? new Date(
+                  schedule.release_date || schedule.first_air_date!
+                ).getFullYear()
+              : "N/A"}
+            )
+          </span>
+        </div>
       </div>
     </div>
   );

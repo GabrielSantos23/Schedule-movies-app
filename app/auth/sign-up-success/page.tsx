@@ -1,6 +1,12 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Link } from "next-view-transitions";
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
   return (
@@ -24,5 +30,5 @@ export default function Page() {
         </div>
       </div>
     </div>
-  )
+  );
 }

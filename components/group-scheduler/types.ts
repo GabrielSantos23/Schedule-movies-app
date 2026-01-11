@@ -26,6 +26,8 @@ export interface GroupSchedule {
   watched?: boolean;
   rating?: number | null;
   vote_average?: number;
+  release_date?: string;
+  first_air_date?: string;
 }
 
 export interface Group {

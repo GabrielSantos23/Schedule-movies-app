@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get("query");
   const type = searchParams.get("type") || "multi"; // movie, tv, or multi
+  const page = searchParams.get("page") || "1";
 
   if (!query) {
     return NextResponse.json({ error: "Query is required" }, { status: 400 });
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(
       `${TMDB_BASE_URL}/search/${searchType}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
         query
-      )}&include_adult=false&language=en-US&page=1`
+      )}&include_adult=false&language=en-US&page=${page}`
     );
 
     if (!response.ok) {
@@ -37,7 +38,10 @@ export async function GET(request: NextRequest) {
     // For multi search, add media_type if not present
     if (searchType === "multi" && data.results) {
       data.results = data.results.filter(
-        (item: any) => item.media_type === "movie" || item.media_type === "tv"
+        (item: any) =>
+          item.media_type === "movie" ||
+          item.media_type === "tv" ||
+          item.media_type === "person"
       );
     }
 

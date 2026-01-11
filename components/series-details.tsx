@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link, useTransitionRouter } from "next-view-transitions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -28,6 +28,7 @@ import {
   LayoutGrid,
   LoaderCircle,
 } from "lucide-react";
+import { AddToGroupButton } from "./add-to-group-button";
 
 interface Episode {
   id: number;
@@ -125,7 +126,7 @@ export default function SeriesDetailsClient({
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [loadingSeasonChange, setLoadingSeasonChange] = useState(false);
-  const router = useRouter();
+  const router = useTransitionRouter();
 
   useEffect(() => {
     const fetchSeries = async () => {
@@ -300,9 +301,10 @@ export default function SeriesDetailsClient({
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-3">
                     {series.credits.cast.slice(0, 5).map((actor) => (
-                      <div
+                      <Link
+                        href={`/person/${actor.id}`}
                         key={actor.id}
-                        className="h-12 w-12 rounded-full border-2 border-background overflow-hidden bg-muted"
+                        className="h-12 w-12 rounded-full border-2 border-background overflow-hidden bg-muted hover:scale-110 transition-transform"
                         title={actor.name}
                       >
                         {actor.profile_path ? (
@@ -316,7 +318,7 @@ export default function SeriesDetailsClient({
                             <Users className="h-5 w-5" />
                           </div>
                         )}
-                      </div>
+                      </Link>
                     ))}
                     {series.credits.cast.length > 5 && (
                       <div className="h-12 w-12 rounded-full border-2 border-background bg-muted/80 flex items-center justify-center text-sm font-medium text-white">
@@ -430,7 +432,17 @@ export default function SeriesDetailsClient({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 pt-2  bottom-4">
+              <div className="flex flex-wrap gap-3 pt-2 bottom-4">
+                <AddToGroupButton
+                  media={{
+                    id: series.id,
+                    title: series.name,
+                    overview: series.overview,
+                    poster_path: series.poster_path,
+                    vote_average: series.vote_average,
+                    media_type: "tv",
+                  }}
+                />
                 {series.trailer && (
                   <Button
                     size="lg"

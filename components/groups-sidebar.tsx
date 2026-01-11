@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Loader2, Film, Pencil, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { Link, useTransitionRouter } from "next-view-transitions";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import {
@@ -39,6 +39,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { SearchOverlay } from "@/components/search-overlay";
+import { Search } from "lucide-react";
 
 interface Group {
   id: string;
@@ -52,11 +54,15 @@ interface Group {
 interface GroupsSidebarProps {
   user: User;
   currentGroupId?: string;
+  initialSearchOpen?: boolean;
+  initialSearchQuery?: string;
 }
 
 export default function GroupsSidebar({
   user,
   currentGroupId,
+  initialSearchOpen,
+  initialSearchQuery,
 }: GroupsSidebarProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,6 +70,7 @@ export default function GroupsSidebar({
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(initialSearchOpen || false);
 
   // Edit state
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
@@ -76,7 +83,7 @@ export default function GroupsSidebar({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const supabase = createClient();
-  const router = useRouter();
+  const router = useTransitionRouter();
 
   useEffect(() => {
     loadGroups();
@@ -435,16 +442,34 @@ export default function GroupsSidebar({
 
       {/* Desktop Sidebar - hidden on mobile */}
       <TooltipProvider delayDuration={100}>
-        <div className="hidden md:flex fixed left-0 top-0 h-full w-[72px] bg-muted/30 border-r border-border/50 flex-col items-center py-4 z-40">
+        <div className="hidden md:flex fixed left-0 top-0 h-full w-[72px] bg-muted/30 backdrop-blur-xl border-r border-border/50 flex-col items-center py-4 z-40">
           {/* Logo */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 mb-2 flex-shrink-0">
+              <Link
+                href="/explore"
+                className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 mb-2 shrink-0 transition-transform hover:scale-105"
+              >
                 <Film className="h-6 w-6" />
-              </div>
+              </Link>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>
-              <p>MovieScheduler</p>
+              <p>Explore Movies & TV Shows</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Search Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="h-12 w-12 rounded-2xl bg-muted/50 hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary mb-2 shrink-0 transition-all hover:scale-105"
+              >
+                <Search className="h-6 w-6" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={10}>
+              <p>Search</p>
             </TooltipContent>
           </Tooltip>
 
@@ -500,11 +525,14 @@ export default function GroupsSidebar({
       </TooltipProvider>
 
       {/* Mobile Header - shown only on mobile */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-xl border-b border-border/50 flex items-center px-4 gap-3 z-40">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background backdrop-blur-3xl border-b border-border/50 flex items-center px-4 gap-3 z-40">
         {/* Logo */}
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 flex-shrink-0">
+        <Link
+          href="/explore"
+          className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 shrink-0 transition-transform hover:scale-105"
+        >
           <Film className="h-5 w-5" />
-        </div>
+        </Link>
 
         {/* Divider */}
         <div className="w-[2px] h-8 bg-border/50 rounded-full flex-shrink-0" />
@@ -518,9 +546,24 @@ export default function GroupsSidebar({
           )}
         </div>
 
+        {/* Mobile Search Button */}
+        <button
+          onClick={() => setIsSearchOpen(true)}
+          className="h-10 w-10 rounded-xl bg-muted/50 hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary shrink-0 transition-transform active:scale-95"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+
         {/* Create Button */}
         <CreateButton />
       </div>
+
+      {isSearchOpen && (
+        <SearchOverlay
+          onClose={() => setIsSearchOpen(false)}
+          defaultValue={initialSearchQuery}
+        />
+      )}
     </>
   );
 }

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { Film, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Link, useTransitionRouter } from "next-view-transitions";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const router = useTransitionRouter();
 
   // List of high-quality movie backdrops
   const backdrops = [

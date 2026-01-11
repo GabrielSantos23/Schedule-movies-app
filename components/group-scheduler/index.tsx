@@ -69,6 +69,9 @@ export default function GroupScheduler({
   const [searchQuery, setSearchQuery] = useState("");
   const [movies, setMovies] = useState<Movie[]>([]);
   const [resultsPage, setResultsPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreResults, setHasMoreResults] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [schedules, setSchedules] = useState<GroupSchedule[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
@@ -120,20 +123,52 @@ export default function GroupScheduler({
   };
 
   // --- AÇÕES ---
-  const searchMovies = async () => {
+  const searchMovies = async (page: number = 1) => {
     if (!searchQuery.trim()) return;
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/tmdb/search?query=${encodeURIComponent(searchQuery)}`
+        `/api/tmdb/search?query=${encodeURIComponent(searchQuery)}&page=${page}`
       );
       const data = await response.json();
-      setMovies(data.results || []);
+
+      if (page === 1) {
+        setMovies(data.results || []);
+        setCurrentPage(1);
+      } else {
+        setMovies((prev) => [...prev, ...(data.results || [])]);
+      }
+
+      setHasMoreResults(data.page < data.total_pages);
       setResultsPage(0);
     } catch (err) {
       setError("Failed search");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMoreMovies = async () => {
+    if (isLoadingMore || !hasMoreResults) return;
+
+    setIsLoadingMore(true);
+    const nextPage = currentPage + 1;
+
+    try {
+      const response = await fetch(
+        `/api/tmdb/search?query=${encodeURIComponent(
+          searchQuery
+        )}&page=${nextPage}`
+      );
+      const data = await response.json();
+
+      setMovies((prev) => [...prev, ...(data.results || [])]);
+      setCurrentPage(nextPage);
+      setHasMoreResults(data.page < data.total_pages);
+    } catch (err) {
+      console.error("Failed to load more:", err);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -239,7 +274,7 @@ export default function GroupScheduler({
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
       {/* DIALOG DE BUSCA */}
       <Dialog open={isAddMovieOpen} onOpenChange={setIsAddMovieOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-border/50">
+        <DialogContent className="sm:max-w-[600px] h-[65vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-border/50 overflow-hidden">
           <div className="p-6 pb-4 space-y-4 border-b border-border/50">
             <DialogHeader>
               <DialogTitle className="text-2xl flex items-center gap-2">
@@ -259,7 +294,7 @@ export default function GroupScheduler({
                 />
               </div>
               <Button
-                onClick={searchMovies}
+                onClick={() => searchMovies()}
                 disabled={isLoading}
                 className="h-11 px-6"
               >
@@ -267,50 +302,109 @@ export default function GroupScheduler({
               </Button>
             </div>
           </div>
-          <ScrollArea className="flex-1 p-6">
-            {movies.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {movies
-                  .slice(resultsPage * 6, (resultsPage + 1) * 6)
-                  .map((movie) => (
-                    <div key={movie.id} className="group cursor-pointer">
-                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-muted shadow-md transition-all group-hover:shadow-xl group-hover:-translate-y-1">
-                        {movie.poster_path ? (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            {movie.media_type === "tv" ? (
-                              <Tv className="opacity-20" />
+          <ScrollArea className="h-[calc(65vh-140px)]">
+            <div className="p-6">
+              {movies.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {movies.map((movie) => {
+                      const isAlreadyAdded = schedules.some(
+                        (s) => s.movie_id === movie.id
+                      );
+
+                      return (
+                        <div key={movie.id} className="group cursor-pointer">
+                          <div
+                            className={`relative aspect-[2/3] rounded-lg overflow-hidden bg-muted shadow-md transition-all ${
+                              isAlreadyAdded
+                                ? "opacity-60"
+                                : "group-hover:shadow-xl group-hover:-translate-y-1"
+                            }`}
+                          >
+                            {movie.poster_path ? (
+                              <img
+                                src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
-                              <Film className="opacity-20" />
+                              <div className="w-full h-full flex items-center justify-center">
+                                {movie.media_type === "tv" ? (
+                                  <Tv className="opacity-20" />
+                                ) : (
+                                  <Film className="opacity-20" />
+                                )}
+                              </div>
+                            )}
+
+                            {isAlreadyAdded ? (
+                              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                <div className="flex items-center gap-1.5 text-white bg-primary/80 px-3 py-1.5 rounded-full text-sm font-medium">
+                                  <Check className="h-4 w-4" />
+                                  Added
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                <Button
+                                  size="sm"
+                                  className="w-full"
+                                  onClick={() => {
+                                    scheduleMovie(movie);
+                                    setIsAddMovieOpen(false);
+                                  }}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" /> Add
+                                </Button>
+                              </div>
                             )}
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                          <Button
-                            size="sm"
-                            className="w-full"
-                            onClick={() => {
-                              scheduleMovie(movie);
-                              setIsAddMovieOpen(false);
-                            }}
-                          >
-                            <Plus className="h-3 w-3 mr-1" /> Add
-                          </Button>
+                          <div className="mt-2 px-1">
+                            <p className="text-sm font-medium leading-tight line-clamp-1">
+                              {movie.title || movie.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {movie.release_date || movie.first_air_date
+                                ? new Date(
+                                    movie.release_date || movie.first_air_date!
+                                  ).getFullYear()
+                                : "N/A"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      );
+                    })}
+                  </div>
+
+                  {isLoadingMore && (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center py-12 opacity-50">
-                <Film className="h-12 w-12" />
-                <p>Search for something!</p>
-              </div>
-            )}
+                  )}
+
+                  {!hasMoreResults && movies.length > 0 && (
+                    <div className="text-center py-6 text-sm text-muted-foreground">
+                      No more results
+                    </div>
+                  )}
+
+                  {hasMoreResults && !isLoadingMore && (
+                    <div className="flex justify-center py-6">
+                      <Button
+                        variant="outline"
+                        onClick={() => loadMoreMovies()}
+                      >
+                        Load more
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center py-12 opacity-50">
+                  <Film className="h-12 w-12" />
+                  <p>Search for something!</p>
+                </div>
+              )}
+            </div>
           </ScrollArea>
         </DialogContent>
       </Dialog>

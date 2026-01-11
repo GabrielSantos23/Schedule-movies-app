@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link, useTransitionRouter } from "next-view-transitions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -21,6 +21,7 @@ import {
   Bookmark,
   LoaderCircle,
 } from "lucide-react";
+import { AddToGroupButton } from "./add-to-group-button";
 
 interface MovieDetails {
   id: number;
@@ -98,7 +99,7 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showTrailer, setShowTrailer] = useState(false);
-  const router = useRouter();
+  const router = useTransitionRouter();
 
   useEffect(() => {
     const fetchMovie = async () => {
@@ -357,7 +358,17 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 pt-2  bottom-4">
+              <div className="flex flex-wrap gap-3 pt-2 bottom-4">
+                <AddToGroupButton
+                  media={{
+                    id: movie.id,
+                    title: movie.title,
+                    overview: movie.overview,
+                    poster_path: movie.poster_path,
+                    vote_average: movie.vote_average,
+                    media_type: "movie",
+                  }}
+                />
                 {movie.trailer && (
                   <Button
                     size="lg"
@@ -380,11 +391,12 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             <ScrollArea className="w-full">
               <div className="flex gap-4 pb-4">
                 {movie.credits.cast.map((actor) => (
-                  <div
+                  <Link
+                    href={`/person/${actor.id}`}
                     key={actor.id}
-                    className="flex-shrink-0 w-32 text-center group"
+                    className="flex-shrink-0 w-32 text-center group cursor-pointer"
                   >
-                    <div className="aspect-square rounded-xl overflow-hidden bg-muted mb-3 shadow-lg group-hover:shadow-xl transition-shadow">
+                    <div className="aspect-square rounded-xl overflow-hidden bg-muted mb-3 shadow-lg group-hover:shadow-xl transition-shadow group-hover:-translate-y-1 transition-transform">
                       {actor.profile_path ? (
                         <img
                           src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
@@ -397,13 +409,13 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                         </div>
                       )}
                     </div>
-                    <p className="font-medium text-sm line-clamp-1">
+                    <p className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
                       {actor.name}
                     </p>
                     <p className="text-xs text-muted-foreground line-clamp-1">
                       {actor.character}
                     </p>
-                  </div>
+                  </Link>
                 ))}
               </div>
               <ScrollBar orientation="horizontal" />

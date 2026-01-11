@@ -70,13 +70,11 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
     setGroups(groupsList);
     setIsLoading(false);
 
-    // If user has groups but no groupId specified, redirect to first group
     if (!groupId && groupsList.length > 0) {
       window.location.href = `/groups/${groupsList[0].id}`;
       return;
     }
 
-    // If we have a groupId, find the group
     if (groupId) {
       const group = groupsList.find((g: Group) => g.id === groupId);
       setSelectedGroup(group || null);
@@ -119,11 +117,9 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
     setIsCreateDialogOpen(false);
     setIsCreating(false);
 
-    // Navigate to the new group
     window.location.href = `/groups/${groupData.id}`;
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -135,13 +131,11 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
     );
   }
 
-  // No groups - show welcome screen
   if (groups.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         <div className="container mx-auto px-4 flex flex-col items-center justify-center min-h-screen">
           <div className="max-w-md text-center space-y-8">
-            {/* Icon */}
             <div className="relative mx-auto w-fit">
               <div className="absolute inset-0 bg-primary/30 blur-3xl rounded-full" />
               <div className="relative h-24 w-24 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-2xl shadow-primary/30">
@@ -149,7 +143,6 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
               </div>
             </div>
 
-            {/* Title & Description */}
             <div className="space-y-3">
               <h1 className="text-3xl md:text-4xl font-bold">
                 Welcome to MovieScheduler
@@ -160,7 +153,6 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
               </p>
             </div>
 
-            {/* Features */}
             <div className="grid grid-cols-3 gap-4 py-4">
               <div className="space-y-2">
                 <div className="h-12 w-12 mx-auto rounded-xl bg-muted flex items-center justify-center">
@@ -182,7 +174,6 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
               </div>
             </div>
 
-            {/* Create Button */}
             <Button
               size="lg"
               className="gap-2 px-8"
@@ -194,7 +185,6 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
           </div>
         </div>
 
-        {/* Create Group Dialog */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
