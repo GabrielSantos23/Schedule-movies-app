@@ -147,7 +147,6 @@ export default function PersonPage() {
       </header>
       <div className="flex-1 overflow-y-auto bg-background">
         <div className="min-h-full pb-10">
-          {/* Back button */}
           <div className="fixed top-20 left-6 z-50 md:top-6 md:left-20 lg:hidden">
             <Link href="/search">
               <Button
@@ -161,9 +160,7 @@ export default function PersonPage() {
           </div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row gap-8 md:gap-12">
-              {/* Profile Image */}
               <div className="flex-shrink-0 mx-auto md:mx-0">
                 <div className="relative w-[250px] h-[375px] md:w-[300px] md:h-[450px] rounded-2xl overflow-hidden shadow-2xl">
                   {person.profile_path ? (
@@ -182,14 +179,12 @@ export default function PersonPage() {
                 </div>
               </div>
 
-              {/* Info Section */}
               <div className="flex-1 space-y-6">
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                     {person.name}
                   </h1>
 
-                  {/* Biography */}
                   {person.biography && (
                     <p className="text-muted-foreground leading-relaxed text-sm md:text-base max-w-3xl">
                       {person.biography.length > 800
@@ -199,7 +194,6 @@ export default function PersonPage() {
                   )}
                 </div>
 
-                {/* Meta Info */}
                 <div className="space-y-3">
                   {person.known_for_department && (
                     <div className="flex items-start gap-4">
@@ -247,7 +241,6 @@ export default function PersonPage() {
                   )}
                 </div>
 
-                {/* Social Links */}
                 <div className="flex items-center gap-3 pt-2">
                   {person.external_ids.instagram_id && (
                     <a
@@ -293,7 +286,6 @@ export default function PersonPage() {
               </div>
             </div>
 
-            {/* Tabs Section */}
             <Tabs defaultValue="known-for" className="mt-12">
               <TabsList className="bg-muted/50 p-1">
                 <TabsTrigger
@@ -316,7 +308,6 @@ export default function PersonPage() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* Known For Tab */}
               <TabsContent value="known-for" className="mt-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                   {knownFor.map((item) => (
@@ -360,7 +351,6 @@ export default function PersonPage() {
                 </div>
               </TabsContent>
 
-              {/* Credits Tab */}
               <TabsContent value="credits" className="mt-6">
                 <div className="space-y-2">
                   {allCredits.slice(0, 50).map((item, index) => (
@@ -415,7 +405,6 @@ export default function PersonPage() {
                 </div>
               </TabsContent>
 
-              {/* Photos Tab */}
               <TabsContent value="photos" className="mt-6">
                 {person.images.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

@@ -19,12 +19,12 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      prompt: "select_account", // Always ask user to select an account
+      prompt: "select_account",
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // 1 day - how often session is refreshed
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
   },
   user: {
     additionalFields: {
@@ -39,7 +39,6 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          // Create a profile in our profiles table when a user is created
           try {
             await pool.query(
               `INSERT INTO profiles (id, email, full_name, avatar_url, updated_at, created_at)

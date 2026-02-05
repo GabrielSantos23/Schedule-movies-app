@@ -21,7 +21,6 @@ export default function SignUpPage() {
   const router = useTransitionRouter();
   const { data: session, isPending } = useSession();
 
-  // List of high-quality movie backdrops
   const backdrops = [
     "rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg", // Interstellar
     "xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg", // Dune: Part Two
@@ -35,13 +34,11 @@ export default function SignUpPage() {
   const [bgImage, setBgImage] = useState(backdrops[0]);
 
   useEffect(() => {
-    // Select a random backdrop on client-side mount
     const randomBackdrop =
       backdrops[Math.floor(Math.random() * backdrops.length)];
     setBgImage(randomBackdrop);
   }, []);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (session && !isPending) {
       router.push("/groups");
@@ -76,7 +73,6 @@ export default function SignUpPage() {
         setError(result.error.message || "Failed to create account");
         setIsLoading(false);
       } else {
-        // Success - redirect to groups
         router.push("/groups");
       }
     } catch (error: unknown) {
@@ -138,7 +134,6 @@ export default function SignUpPage() {
                 </div>
               )}
 
-              {/* Google Sign Up Button */}
               <Button
                 variant="outline"
                 className="w-full h-12 text-base font-medium relative hover:bg-muted/50 transition-colors"

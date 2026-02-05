@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 
-// Import server actions
 import {
   getGroupsByUser,
   createGroup as createGroupAction,

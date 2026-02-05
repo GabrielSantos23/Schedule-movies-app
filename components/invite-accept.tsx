@@ -13,7 +13,6 @@ import { Users, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
-// Import server actions
 import {
   getInviteByCode,
   getGroup,
@@ -48,7 +47,6 @@ export default function InviteAccept({
 
   const loadInviteInfo = async () => {
     try {
-      // Get invite link
       const inviteData = await getInviteByCode(code);
 
       if (!inviteData) {
@@ -57,7 +55,6 @@ export default function InviteAccept({
         return;
       }
 
-      // Get group info
       const groupData = await getGroup(inviteData.group_id);
 
       if (!groupData) {
@@ -66,7 +63,6 @@ export default function InviteAccept({
         return;
       }
 
-      // Check if user is already a member
       const membership = await getMembership(inviteData.group_id, user.id);
 
       if (membership) {
@@ -100,10 +96,8 @@ export default function InviteAccept({
         role: "member",
       });
 
-      // Increment invite link usage count
       await incrementInviteUses(code);
 
-      // Log activity
       await logActivity({
         group_id: inviteInfo.group_id,
         user_id: user.id,
@@ -113,7 +107,6 @@ export default function InviteAccept({
       setSuccess(true);
       setIsLoading(false);
 
-      // Redirect to group page after 2 seconds
       setTimeout(() => {
         router.push(`/groups/${inviteInfo.group_id}`);
       }, 2000);

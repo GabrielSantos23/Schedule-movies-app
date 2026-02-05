@@ -133,16 +133,15 @@ export default function SeriesDetailsClient({
       try {
         setIsLoading(true);
         const response = await fetch(
-          `/api/tmdb/tv/${seriesId}?season=${selectedSeason}`
+          `/api/tmdb/tv/${seriesId}?season=${selectedSeason}`,
         );
         if (!response.ok) throw new Error("Failed to fetch series");
         const data = await response.json();
         setSeries(data);
 
-        // Set initial season to first non-special season
         if (data.seasons && data.seasons.length > 0 && selectedSeason === 1) {
           const firstRealSeason = data.seasons.find(
-            (s: Season) => s.season_number > 0
+            (s: Season) => s.season_number > 0,
           );
           if (firstRealSeason && firstRealSeason.season_number !== 1) {
             setSelectedSeason(firstRealSeason.season_number);
@@ -157,7 +156,6 @@ export default function SeriesDetailsClient({
     fetchSeries();
   }, [seriesId]);
 
-  // Fetch new season when selected
   const handleSeasonChange = async (seasonNumber: string) => {
     const newSeason = parseInt(seasonNumber, 10);
     setSelectedSeason(newSeason);
@@ -165,12 +163,12 @@ export default function SeriesDetailsClient({
 
     try {
       const response = await fetch(
-        `/api/tmdb/tv/${seriesId}?season=${newSeason}`
+        `/api/tmdb/tv/${seriesId}?season=${newSeason}`,
       );
       if (response.ok) {
         const data = await response.json();
         setSeries((prev) =>
-          prev ? { ...prev, currentSeason: data.currentSeason } : null
+          prev ? { ...prev, currentSeason: data.currentSeason } : null,
         );
       }
     } catch (err) {
@@ -211,16 +209,14 @@ export default function SeriesDetailsClient({
     series.episode_run_time.length > 0
       ? Math.round(
           series.episode_run_time.reduce((a, b) => a + b, 0) /
-            series.episode_run_time.length
+            series.episode_run_time.length,
         )
       : null;
 
-  // Filter out specials (season 0) for the selector
   const availableSeasons = series.seasons.filter((s) => s.season_number > 0);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Trailer Modal */}
       {showTrailer && series.trailer && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
@@ -244,9 +240,7 @@ export default function SeriesDetailsClient({
         </div>
       )}
 
-      {/* Hero Section with Backdrop */}
       <div className="relative min-h-[80vh]">
-        {/* Backdrop Image */}
         <div className="absolute inset-0">
           {series.backdrop_path ? (
             <img
@@ -257,12 +251,10 @@ export default function SeriesDetailsClient({
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-muted" />
           )}
-          {/* Gradient Overlays */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
         </div>
 
-        {/* Navigation */}
         <div className="relative z-10 container mx-auto px-4 pt-6">
           <Button
             variant="ghost"
@@ -277,9 +269,7 @@ export default function SeriesDetailsClient({
 
         <div className="relative z-10 container mx-auto px-4 pt-12 ">
           <div className="grid lg:grid-cols-[1fr,1.5fr] gap-8 items-end">
-            {/* Left: Series Info */}
             <div className="space-y-6 max-w-xl">
-              {/* Title */}
               <div className="space-y-2">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                   {series.name}
@@ -291,12 +281,10 @@ export default function SeriesDetailsClient({
                 )}
               </div>
 
-              {/* Overview */}
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed line-clamp-4">
                 {series.overview}
               </p>
 
-              {/* Cast Avatars */}
               {series.credits.cast.length > 0 && (
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-3">
@@ -336,9 +324,7 @@ export default function SeriesDetailsClient({
                 </div>
               )}
 
-              {/* Stats Row */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3 relative">
-                {/* Rating */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 text-yellow-500">
                     <Star className="h-5 w-5 fill-current" />
@@ -349,7 +335,6 @@ export default function SeriesDetailsClient({
                   <span className="text-muted-foreground/50">/10</span>
                 </div>
 
-                {/* Runtime */}
                 {averageRuntime && (
                   <div className="flex items-center gap-2 text-muted-foreground/70">
                     <Clock className="h-4 w-4" />
@@ -357,7 +342,6 @@ export default function SeriesDetailsClient({
                   </div>
                 )}
 
-                {/* Year */}
                 {series.first_air_date && (
                   <div className="flex items-center gap-2 text-muted-foreground/70">
                     <Calendar className="h-4 w-4" />
@@ -365,14 +349,12 @@ export default function SeriesDetailsClient({
                   </div>
                 )}
 
-                {/* Seasons */}
                 <div className="flex items-center gap-2 text-muted-foreground/70">
                   <Tv className="h-4 w-4" />
                   <span>{series.number_of_seasons} Seasons</span>
                 </div>
               </div>
 
-              {/* Genres */}
               <div className="flex flex-wrap gap-2">
                 {series.genres.map((genre) => (
                   <Badge
@@ -385,7 +367,6 @@ export default function SeriesDetailsClient({
                 ))}
               </div>
 
-              {/* Streaming Providers */}
               <div className="pt-4">
                 <h3 className="text-sm font-semibold text-muted-foreground mb-3">
                   Available on
@@ -393,7 +374,6 @@ export default function SeriesDetailsClient({
                 {series.providers ? (
                   <div className="flex flex-wrap gap-4">
                     {(() => {
-                      // Adjust based on the corrected interface (no .results)
                       const country =
                         (series.providers as any).BR ||
                         (series.providers as any).US;
@@ -431,7 +411,6 @@ export default function SeriesDetailsClient({
                 )}
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 pt-2 bottom-4">
                 <AddToGroupButton
                   media={{
@@ -459,15 +438,12 @@ export default function SeriesDetailsClient({
         </div>
       </div>
 
-      {/* Episodes Section */}
       <div className="container mx-auto px-4 py-8">
         <section className="space-y-6">
-          {/* Episodes Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <h2 className="text-3xl font-bold italic">Episodes</h2>
 
-              {/* Season Selector */}
               <Select
                 value={selectedSeason.toString()}
                 onValueChange={handleSeasonChange}
@@ -488,7 +464,6 @@ export default function SeriesDetailsClient({
               </Select>
             </div>
 
-            {/* View Mode Toggle */}
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
               <Button
                 variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -517,7 +492,6 @@ export default function SeriesDetailsClient({
             </div>
           </div>
 
-          {/* Episodes List */}
           {loadingSeasonChange ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
@@ -526,7 +500,6 @@ export default function SeriesDetailsClient({
             </div>
           ) : series.currentSeason?.episodes ? (
             <>
-              {/* Grid View */}
               {viewMode === "grid" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {series.currentSeason.episodes.map((episode) => (
@@ -539,7 +512,6 @@ export default function SeriesDetailsClient({
                 </div>
               )}
 
-              {/* List View */}
               {viewMode === "list" && (
                 <div className="flex flex-col gap-4">
                   {series.currentSeason.episodes.map((episode) => (
@@ -552,7 +524,6 @@ export default function SeriesDetailsClient({
                 </div>
               )}
 
-              {/* Compact View */}
               {viewMode === "compact" && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                   {series.currentSeason.episodes.map((episode) => (
@@ -573,7 +544,6 @@ export default function SeriesDetailsClient({
           )}
         </section>
 
-        {/* Cast Section */}
         {series.credits.cast.length > 0 && (
           <section className="space-y-6 mt-12">
             <h2 className="text-2xl font-bold">Cast</h2>
@@ -611,7 +581,6 @@ export default function SeriesDetailsClient({
           </section>
         )}
 
-        {/* Info Cards */}
         <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
           {creators.length > 0 && (
             <div className="space-y-2 p-4 rounded-xl bg-muted/50">
@@ -674,7 +643,6 @@ export default function SeriesDetailsClient({
           )}
         </section>
 
-        {/* Similar Shows */}
         {series.similar.length > 0 && (
           <section className="space-y-6 mt-10">
             <h2 className="text-2xl font-bold">Similar Shows</h2>
@@ -713,7 +681,6 @@ export default function SeriesDetailsClient({
           </section>
         )}
 
-        {/* Networks */}
         {series.networks && series.networks.length > 0 && (
           <section className="space-y-6 pb-8 mt-10">
             <h2 className="text-2xl font-bold">Networks</h2>
@@ -743,7 +710,6 @@ export default function SeriesDetailsClient({
   );
 }
 
-// Episode Card Component
 function EpisodeCard({
   episode,
   viewMode,
@@ -774,21 +740,18 @@ function EpisodeCard({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
-        {/* Play button overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center">
             <Play className="h-5 w-5 text-foreground fill-foreground ml-0.5" />
           </div>
         </div>
 
-        {/* Episode number */}
         <div className="absolute bottom-2 left-2 right-2">
           <p className="text-muted-foreground text-xs font-medium">
             E{episode.episode_number}
           </p>
         </div>
 
-        {/* Vote count badge */}
         {episode.vote_count > 0 && (
           <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-muted-foreground text-xs">
             <ThumbsUp className="h-3 w-3" />
@@ -802,7 +765,6 @@ function EpisodeCard({
   if (viewMode === "list") {
     return (
       <div className="group flex gap-4 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer">
-        {/* Thumbnail */}
         <div className="relative flex-shrink-0 w-48 aspect-video rounded-lg overflow-hidden">
           {episode.still_path ? (
             <img
@@ -816,14 +778,12 @@ function EpisodeCard({
             </div>
           )}
 
-          {/* Play button overlay */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
             <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center">
               <Play className="h-5 w-5 text-foreground fill-foreground ml-0.5" />
             </div>
           </div>
 
-          {/* Vote count badge */}
           {episode.vote_count > 0 && (
             <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-muted-foreground text-xs">
               <ThumbsUp className="h-3 w-3" />
@@ -832,7 +792,6 @@ function EpisodeCard({
           )}
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -870,10 +829,8 @@ function EpisodeCard({
     );
   }
 
-  // Grid view (default)
   return (
     <div className="group rounded-xl overflow-hidden bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer">
-      {/* Thumbnail */}
       <div className="relative aspect-video">
         {episode.still_path ? (
           <img
@@ -887,14 +844,12 @@ function EpisodeCard({
           </div>
         )}
 
-        {/* Play button overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
           <div className="h-12 w-12 rounded-full bg-white/90 flex items-center justify-center">
             <Play className="h-6 w-6 text-black fill-black ml-0.5" />
           </div>
         </div>
 
-        {/* Vote count badge */}
         {episode.vote_count > 0 && (
           <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded bg-black/60 text-white text-xs">
             <ThumbsUp className="h-3 w-3" />
@@ -903,7 +858,6 @@ function EpisodeCard({
         )}
       </div>
 
-      {/* Content */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

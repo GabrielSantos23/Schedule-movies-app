@@ -1,8 +1,3 @@
-/**
- * Script to backfill release_date and first_air_date for existing group_schedules
- * Run this after adding the columns to populate existing records
- */
-
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -14,7 +9,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 async function backfillReleaseDates() {
   console.log("Starting backfill of release dates...");
 
-  // Get all schedules without release dates
   const { data: schedules, error } = await supabase
     .from("group_schedules")
     .select("id, movie_id, media_type")
@@ -31,12 +25,12 @@ async function backfillReleaseDates() {
     try {
       const mediaType = schedule.media_type === "tv" ? "tv" : "movie";
       const response = await fetch(
-        `https://api.themoviedb.org/3/${mediaType}/${schedule.movie_id}?api_key=${TMDB_API_KEY}`
+        `https://api.themoviedb.org/3/${mediaType}/${schedule.movie_id}?api_key=${TMDB_API_KEY}`,
       );
 
       if (!response.ok) {
         console.error(
-          `Failed to fetch data for ${mediaType} ${schedule.movie_id}`
+          `Failed to fetch data for ${mediaType} ${schedule.movie_id}`,
         );
         continue;
       }
@@ -64,7 +58,6 @@ async function backfillReleaseDates() {
         }
       }
 
-      // Rate limiting - wait 250ms between requests to respect TMDB API limits
       await new Promise((resolve) => setTimeout(resolve, 250));
     } catch (err) {
       console.error(`Error processing schedule ${schedule.id}:`, err);

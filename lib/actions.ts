@@ -3,7 +3,6 @@
 import { db } from "@/lib/db";
 import { format } from "date-fns";
 
-// ===== PROFILES =====
 export async function getProfile(userId: string) {
   return db.profiles.getById(userId);
 }
@@ -17,7 +16,6 @@ export async function upsertProfile(profile: {
   return db.profiles.upsert(profile);
 }
 
-// ===== GROUPS =====
 export async function getGroup(groupId: string) {
   return db.groups.getById(groupId);
 }
@@ -45,11 +43,9 @@ export async function deleteGroup(groupId: string) {
   return db.groups.delete(groupId);
 }
 
-// ===== GROUP MEMBERS =====
 export async function getGroupMembers(groupId: string) {
   const members = await db.groupMembers.getByGroupId(groupId);
 
-  // Get profiles for all members
   const membersWithProfiles = await Promise.all(
     members.map(async (member) => {
       const profile = await db.profiles.getById(member.user_id);
@@ -83,18 +79,15 @@ export async function removeGroupMember(groupId: string, userId: string) {
   return db.groupMembers.delete(groupId, userId);
 }
 
-// ===== GROUP SCHEDULES =====
 export async function getGroupSchedules(groupId: string) {
   const schedules = await db.groupSchedules.getByGroupId(groupId);
 
-  // Get votes and interests for all schedules
   const scheduleIds = schedules.map((s) => s.id);
   const [votes, interests] = await Promise.all([
     db.scheduleVotes.getByScheduleIds(scheduleIds),
     db.scheduleInterests.getByScheduleIds(scheduleIds),
   ]);
 
-  // Attach votes and interests to schedules
   return schedules.map((schedule) => ({
     ...schedule,
     schedule_votes: votes.filter((v) => v.schedule_id === schedule.id),
@@ -102,7 +95,6 @@ export async function getGroupSchedules(groupId: string) {
   }));
 }
 
-// Basic genre map for TMDB
 const genreMap: Record<number, string> = {
   28: "Action",
   12: "Adventure",
@@ -173,7 +165,6 @@ export async function setScheduleWatched(scheduleId: string, watched: boolean) {
 }
 
 export async function markScheduleAsWatched(scheduleId: string) {
-  // Mark as watched and clear the date
   const result = await db.groupSchedules.update(scheduleId, {
     watched: true,
     scheduled_date: null,
@@ -185,7 +176,6 @@ export async function deleteSchedule(scheduleId: string) {
   return db.groupSchedules.delete(scheduleId);
 }
 
-// ===== INVITE LINKS =====
 export async function getInviteByCode(code: string) {
   return db.inviteLinks.getByCode(code);
 }
@@ -204,18 +194,15 @@ export async function incrementInviteUses(code: string) {
   return db.inviteLinks.incrementUses(code);
 }
 
-// ===== SCHEDULE INTERESTS =====
 export async function toggleScheduleInterest(
   scheduleId: string,
   userId: string,
-  currentVoteType: number | null, // The user's current vote (1 or -1 or null)
-  newVoteType: number, // The vote they are trying to cast (1 or -1)
+  currentVoteType: number | null,
+  newVoteType: number,
 ) {
   if (currentVoteType === newVoteType) {
-    // If clicking same vote, remove it (toggle off)
     return db.scheduleInterests.delete(scheduleId, userId);
   } else {
-    // Upsert new vote
     return db.scheduleInterests.upsert({
       schedule_id: scheduleId,
       user_id: userId,
@@ -224,7 +211,6 @@ export async function toggleScheduleInterest(
   }
 }
 
-// ===== SCHEDULE VOTES =====
 export async function upsertVote(data: {
   schedule_id: string;
   user_id: string;
@@ -237,11 +223,9 @@ export async function deleteVote(scheduleId: string, userId: string) {
   return db.scheduleVotes.delete(scheduleId, userId);
 }
 
-// ===== GROUP ACTIVITIES =====
 export async function getGroupActivities(groupId: string, limit?: number) {
   const activities = await db.groupActivities.getByGroupId(groupId, limit);
 
-  // Get profiles for activity users
   const userIds = [...new Set(activities.map((a) => a.user_id))];
   const profiles = await Promise.all(
     userIds.map((id) => db.profiles.getById(id)),

@@ -15,10 +15,6 @@ import {
   Calendar,
   Film,
   Users,
-  ExternalLink,
-  Heart,
-  Share2,
-  Bookmark,
   LoaderCircle,
 } from "lucide-react";
 import { AddToGroupButton } from "./add-to-group-button";
@@ -145,12 +141,11 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
 
   const directors = movie.credits.crew.filter((c) => c.job === "Director");
   const writers = movie.credits.crew.filter(
-    (c) => c.job === "Screenplay" || c.job === "Writer"
+    (c) => c.job === "Screenplay" || c.job === "Writer",
   );
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Trailer Modal */}
       {showTrailer && movie.trailer && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
@@ -174,9 +169,7 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
         </div>
       )}
 
-      {/* Hero Section with Backdrop */}
       <div className="relative min-h-[80vh]">
-        {/* Backdrop Image */}
         <div className="absolute inset-0">
           {movie.backdrop_path ? (
             <img
@@ -187,12 +180,10 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-muted" />
           )}
-          {/* Gradient Overlays */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
         </div>
 
-        {/* Navigation */}
         <div className="relative z-10 container mx-auto px-4 pt-6">
           <Button
             variant="ghost"
@@ -207,9 +198,7 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
 
         <div className="relative z-10 container mx-auto px-4 pt-12 ">
           <div className="grid lg:grid-cols-[1fr,1.5fr] gap-8 items-end">
-            {/* Left: Movie Info */}
             <div className="space-y-6 max-w-xl">
-              {/* Title */}
               <div className="space-y-2">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                   {movie.title}
@@ -221,12 +210,10 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                 )}
               </div>
 
-              {/* Overview */}
               <p className="text-muted-foreground/80 text-base md:text-lg leading-relaxed line-clamp-4">
                 {movie.overview}
               </p>
 
-              {/* Cast Avatars */}
               {movie.credits.cast.length > 0 && (
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-3">
@@ -265,9 +252,7 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                 </div>
               )}
 
-              {/* Stats Row */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3 relative">
-                {/* Rating */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 text-yellow-500">
                     <Star className="h-5 w-5 fill-current" />
@@ -278,7 +263,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                   <span className="text-muted-foreground/50">/10</span>
                 </div>
 
-                {/* Runtime */}
                 {movie.runtime > 0 && (
                   <div className="flex items-center gap-2 text-muted-foreground/70">
                     <Clock className="h-4 w-4" />
@@ -286,7 +270,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                   </div>
                 )}
 
-                {/* Year */}
                 {movie.release_date && (
                   <div className="flex items-center gap-2 text-muted-foreground/70">
                     <Calendar className="h-4 w-4" />
@@ -295,7 +278,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                 )}
               </div>
 
-              {/* Genres */}
               <div className="flex flex-wrap gap-2">
                 {movie.genres.map((genre) => (
                   <Badge
@@ -308,7 +290,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                 ))}
               </div>
 
-              {/* Streaming Providers */}
               <div className="pt-4">
                 <h3 className="text-sm font-semibold text-muted-foreground mb-3">
                   Available on
@@ -316,13 +297,9 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                 {movie.providers ? (
                   <div className="flex flex-wrap gap-4">
                     {(() => {
-                      // Adjust based on the corrected interface (no .results)
                       const country =
                         (movie.providers as any).BR ||
                         (movie.providers as any).US;
-                      // Safe cast or just access if interface matches.
-                      // Since I stripped 'results' from the interface, I should access directly.
-                      // But I must ensure runtime matches.
                       const flatrate = country?.flatrate || [];
 
                       if (flatrate.length === 0) {
@@ -357,7 +334,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
                 )}
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 pt-2 bottom-4">
                 <AddToGroupButton
                   media={{
@@ -435,7 +411,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             </div>
           )}
 
-          {/* Writers */}
           {writers.length > 0 && (
             <div className="space-y-2 p-4 rounded-xl bg-muted/50">
               <h3 className="text-sm text-muted-foreground font-medium">
@@ -450,7 +425,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             </div>
           )}
 
-          {/* Budget */}
           <div className="space-y-2 p-4 rounded-xl bg-muted/50">
             <h3 className="text-sm text-muted-foreground font-medium">
               Budget
@@ -458,7 +432,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             <p className="font-semibold">{formatCurrency(movie.budget)}</p>
           </div>
 
-          {/* Revenue */}
           <div className="space-y-2 p-4 rounded-xl bg-muted/50">
             <h3 className="text-sm text-muted-foreground font-medium">
               Box Office
@@ -466,7 +439,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             <p className="font-semibold">{formatCurrency(movie.revenue)}</p>
           </div>
 
-          {/* Status */}
           <div className="space-y-2 p-4 rounded-xl bg-muted/50">
             <h3 className="text-sm text-muted-foreground font-medium">
               Status
@@ -474,7 +446,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             <p className="font-semibold">{movie.status}</p>
           </div>
 
-          {/* Language */}
           {movie.spoken_languages.length > 0 && (
             <div className="space-y-2 p-4 rounded-xl bg-muted/50">
               <h3 className="text-sm text-muted-foreground font-medium">
@@ -486,13 +457,11 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
             </div>
           )}
 
-          {/* Vote Count */}
           <div className="space-y-2 p-4 rounded-xl bg-muted/50">
             <h3 className="text-sm text-muted-foreground font-medium">Votes</h3>
             <p className="font-semibold">{movie.vote_count.toLocaleString()}</p>
           </div>
 
-          {/* Release Date */}
           <div className="space-y-2 p-4 rounded-xl bg-muted/50">
             <h3 className="text-sm text-muted-foreground font-medium">
               Release Date
@@ -545,7 +514,6 @@ export default function MovieDetailsClient({ movieId }: { movieId: string }) {
           </section>
         )}
 
-        {/* Production Companies */}
         {movie.production_companies.length > 0 && (
           <section className="space-y-6 pb-8 mt-10">
             <h2 className="text-2xl font-bold">Production</h2>

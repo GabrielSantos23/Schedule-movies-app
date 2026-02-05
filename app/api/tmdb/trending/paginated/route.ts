@@ -5,18 +5,17 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const type = searchParams.get("type") || "movie"; // movie, tv
+  const type = searchParams.get("type") || "movie";
   const page = searchParams.get("page") || "1";
 
   if (!TMDB_API_KEY) {
     return NextResponse.json(
       { error: "TMDB API key not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
   try {
-    // Determine the endpoint based on type
     let endpoint = "";
     if (type === "tv") {
       endpoint = `${TMDB_BASE_URL}/trending/tv/week`;
@@ -25,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${endpoint}?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`
+      `${endpoint}?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`,
     );
 
     if (!response.ok) {
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch trending data" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

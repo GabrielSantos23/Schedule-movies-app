@@ -19,7 +19,6 @@ export default function LoginPage() {
   const router = useTransitionRouter();
   const { data: session, isPending } = useSession();
 
-  // List of high-quality movie backdrops
   const backdrops = [
     "rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg", // Interstellar
     "xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg", // Dune: Part Two
@@ -33,13 +32,11 @@ export default function LoginPage() {
   const [bgImage, setBgImage] = useState(backdrops[0]);
 
   useEffect(() => {
-    // Select a random backdrop on client-side mount
     const randomBackdrop =
       backdrops[Math.floor(Math.random() * backdrops.length)];
     setBgImage(randomBackdrop);
   }, []);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (session && !isPending) {
       router.push("/groups");
@@ -62,7 +59,6 @@ export default function LoginPage() {
         setError(result.error.message || "Invalid credentials");
         setIsLoading(false);
       } else {
-        // Redirect is handled automatically
         router.push("/groups");
       }
     } catch (error: unknown) {
@@ -124,7 +120,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Google Sign In Button */}
               <Button
                 variant="outline"
                 className="w-full h-12 text-base font-medium relative hover:bg-muted/50 transition-colors"
@@ -262,6 +257,7 @@ export default function LoginPage() {
               "The best way to predict the future is to create it. The best way
               to watch movies is to schedule them."
             </p>
+
             <footer className="text-sm opacity-80">MovieScheduler Team</footer>
           </blockquote>
         </div>

@@ -84,7 +84,6 @@ export default function GroupsSidebar({
   initialSearchQuery,
 }: GroupsSidebarProps) {
   const pathname = usePathname();
-  // Derive selected group ID from prop OR pathname
   const derivedGroupId =
     currentGroupId ||
     (pathname?.startsWith("/groups/") ? pathname.split("/")[2] : undefined);

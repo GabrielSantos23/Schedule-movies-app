@@ -5,7 +5,7 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const searchParams = request.nextUrl.searchParams;
@@ -14,28 +14,27 @@ export async function GET(
   if (!TMDB_API_KEY) {
     return NextResponse.json(
       { error: "TMDB API key not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
   try {
-    // Fetch TV show details with credits, videos, and similar shows
     const [tvRes, creditsRes, videosRes, similarRes, providersRes] =
       await Promise.all([
         fetch(
-          `${TMDB_BASE_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=en-US`
+          `${TMDB_BASE_URL}/tv/${id}?api_key=${TMDB_API_KEY}&language=en-US`,
         ),
         fetch(
-          `${TMDB_BASE_URL}/tv/${id}/credits?api_key=${TMDB_API_KEY}&language=en-US`
+          `${TMDB_BASE_URL}/tv/${id}/credits?api_key=${TMDB_API_KEY}&language=en-US`,
         ),
         fetch(
-          `${TMDB_BASE_URL}/tv/${id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
+          `${TMDB_BASE_URL}/tv/${id}/videos?api_key=${TMDB_API_KEY}&language=en-US`,
         ),
         fetch(
-          `${TMDB_BASE_URL}/tv/${id}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`
+          `${TMDB_BASE_URL}/tv/${id}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`,
         ),
         fetch(
-          `${TMDB_BASE_URL}/tv/${id}/watch/providers?api_key=${TMDB_API_KEY}`
+          `${TMDB_BASE_URL}/tv/${id}/watch/providers?api_key=${TMDB_API_KEY}`,
         ),
       ]);
 
@@ -49,23 +48,21 @@ export async function GET(
     const similar = await similarRes.json();
     const providers = await providersRes.json();
 
-    // Fetch season details if a specific season is requested
     let seasonDetails = null;
     const seasonNumber = season ? parseInt(season, 10) : 1;
 
     if (tv.seasons && tv.seasons.length > 0) {
       const seasonRes = await fetch(
-        `${TMDB_BASE_URL}/tv/${id}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=en-US`
+        `${TMDB_BASE_URL}/tv/${id}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=en-US`,
       );
       if (seasonRes.ok) {
         seasonDetails = await seasonRes.json();
       }
     }
 
-    // Get trailer (prefer official trailers)
     const trailer =
       videos.results?.find(
-        (v: any) => v.type === "Trailer" && v.site === "YouTube"
+        (v: any) => v.type === "Trailer" && v.site === "YouTube",
       ) || videos.results?.[0];
 
     return NextResponse.json({
@@ -79,7 +76,7 @@ export async function GET(
                 c.job === "Director" ||
                 c.job === "Executive Producer" ||
                 c.job === "Creator" ||
-                c.department === "Writing"
+                c.department === "Writing",
             )
             .slice(0, 5) || [],
       },
@@ -97,7 +94,7 @@ export async function GET(
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch TV show details" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

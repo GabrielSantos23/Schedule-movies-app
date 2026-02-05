@@ -62,19 +62,16 @@ export function MovieCard({
   const rating = schedule.vote_average || 0;
   const isDark = (theme || resolvedTheme) === "dark";
 
-  // Interest logic
   const interests = schedule.schedule_interests || [];
-  const interestedUsers = interests.filter((i) => i.interested);
+  const interestedUsers = interests.filter((i) => i.vote_type === 1);
   const myInterest = interests.find((i) => i.user_id === user.id);
-  const amIInterested = myInterest?.interested ?? null;
+  const amIInterested = myInterest?.vote_type === 1;
   const interestCount = interestedUsers.length;
 
-  // Get names of interested users
   const interestedUserNames = interestedUsers.map((i, index) => {
     if (i.user_id === user.id) return "You";
     const member = members.find((m) => m.user_id === i.user_id);
     if (member) {
-      // Fallback hierarchy: full_name -> email prefix -> Member + index
       return (
         member.profiles?.full_name ||
         member.profiles?.email?.split("@")[0] ||
@@ -164,7 +161,6 @@ export function MovieCard({
           </div>
         )}
 
-        {/* Interest indicator - top right */}
         {!schedule.watched && (
           <TooltipProvider>
             <Tooltip>
@@ -250,7 +246,7 @@ export function MovieCard({
             (
             {schedule.release_date || schedule.first_air_date
               ? new Date(
-                  schedule.release_date || schedule.first_air_date!
+                  schedule.release_date || schedule.first_air_date!,
                 ).getFullYear()
               : "N/A"}
             )

@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { ExploreCard } from "./explore-card";
 import { Link } from "next-view-transitions";
 import { MediaItem } from "./types";
-import { cn } from "@/lib/utils"; // Utilitário padrão do Shadcn para classes
+import { cn } from "@/lib/utils";
 
 interface ExploreRowProps {
   title: string;
   items: MediaItem[];
   type: "movie" | "tv";
-  variant?: "row" | "grid"; // Nova prop
+  variant?: "row" | "grid";
 }
 
 export function ExploreRow({
@@ -66,7 +66,7 @@ export function ExploreRow({
     <div
       className={cn(
         "space-y-4 py-4 mx-auto",
-        isGrid ? "max-w-7xl px-4 md:px-8" : "max-w-[93vw]"
+        isGrid ? "max-w-7xl px-4 md:px-8" : "max-w-[93vw]",
       )}
     >
       <div className="flex items-center justify-between px-4 md:px-8">
@@ -74,12 +74,11 @@ export function ExploreRow({
           <h2
             className={cn(
               "font-bold",
-              isGrid ? "text-2xl md:text-3xl" : "text-xl md:text-2xl"
+              isGrid ? "text-2xl md:text-3xl" : "text-xl md:text-2xl",
             )}
           >
             {title}
           </h2>
-          {/* Só mostra o link "Explore All" se não estivermos já na visão de grid */}
           {!isGrid && (
             <Link
               href={`/explore/all?type=${type}`}
@@ -90,7 +89,6 @@ export function ExploreRow({
           )}
         </div>
 
-        {/* Controles de scroll: Ocultos se for grid */}
         {!isGrid && (
           <div className="hidden md:flex items-center gap-2">
             <Button
@@ -116,14 +114,12 @@ export function ExploreRow({
       </div>
 
       {isGrid ? (
-        // Renderização em GRID (Para a página Explore All)
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
           {items.map((item) => (
             <ExploreCard key={item.id} item={item} type={type} />
           ))}
         </div>
       ) : (
-        // Renderização em ROW (Carrossel original)
         <div
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto px-4 md:px-8 pb-4 scrollbar-hide scroll-smooth"

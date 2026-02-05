@@ -9,7 +9,6 @@ export default async function GroupsPage() {
     redirect("/auth/login");
   }
 
-  // Convert Better Auth user to the expected format
   const user = {
     id: session.user.id,
     email: session.user.email,

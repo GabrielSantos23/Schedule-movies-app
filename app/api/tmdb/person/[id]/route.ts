@@ -5,21 +5,20 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
 
   if (!TMDB_API_KEY) {
     return NextResponse.json(
       { error: "TMDB API key not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
   try {
-    // Fetch person details
     const detailsResponse = await fetch(
-      `${TMDB_BASE_URL}/person/${id}?api_key=${TMDB_API_KEY}&language=en-US`
+      `${TMDB_BASE_URL}/person/${id}?api_key=${TMDB_API_KEY}&language=en-US`,
     );
 
     if (!detailsResponse.ok) {
@@ -28,34 +27,30 @@ export async function GET(
 
     const details = await detailsResponse.json();
 
-    // Fetch combined credits (movies and TV shows)
     const creditsResponse = await fetch(
-      `${TMDB_BASE_URL}/person/${id}/combined_credits?api_key=${TMDB_API_KEY}&language=en-US`
+      `${TMDB_BASE_URL}/person/${id}/combined_credits?api_key=${TMDB_API_KEY}&language=en-US`,
     );
 
     const credits = creditsResponse.ok
       ? await creditsResponse.json()
       : { cast: [], crew: [] };
 
-    // Fetch images
     const imagesResponse = await fetch(
-      `${TMDB_BASE_URL}/person/${id}/images?api_key=${TMDB_API_KEY}`
+      `${TMDB_BASE_URL}/person/${id}/images?api_key=${TMDB_API_KEY}`,
     );
 
     const images = imagesResponse.ok
       ? await imagesResponse.json()
       : { profiles: [] };
 
-    // Fetch external IDs (social media links)
     const externalIdsResponse = await fetch(
-      `${TMDB_BASE_URL}/person/${id}/external_ids?api_key=${TMDB_API_KEY}`
+      `${TMDB_BASE_URL}/person/${id}/external_ids?api_key=${TMDB_API_KEY}`,
     );
 
     const externalIds = externalIdsResponse.ok
       ? await externalIdsResponse.json()
       : {};
 
-    // Sort credits by popularity
     const sortedCast = (credits.cast || [])
       .filter((item: any) => item.poster_path)
       .sort((a: any, b: any) => (b.popularity || 0) - (a.popularity || 0));
@@ -73,7 +68,7 @@ export async function GET(
     console.error("Error fetching person:", error);
     return NextResponse.json(
       { error: "Failed to fetch person details" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

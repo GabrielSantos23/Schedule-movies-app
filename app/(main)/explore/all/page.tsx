@@ -36,7 +36,6 @@ function ExploreAllContent() {
     [loading, hasMore],
   );
 
-  // Reset when type changes
   useEffect(() => {
     setItems([]);
     setPage(1);
@@ -55,7 +54,6 @@ function ExploreAllContent() {
           const newItems = data.results || [];
 
           setItems((prev) => {
-            // Basic deduplication just in case
             const existingIds = new Set(prev.map((i) => i.id));
             const uniqueNewItems = newItems.filter(
               (i: MediaItem) => !existingIds.has(i.id),

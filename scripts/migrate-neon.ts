@@ -21,13 +21,9 @@ async function migrate() {
   try {
     console.log("📝 Running schema migration...\n");
 
-    // Run each CREATE statement separately using tagged template literals
-
-    // Enable UUID extension
     await sql`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`;
     console.log("  ✅ Enabled pgcrypto extension");
 
-    // Create profiles table
     await sql`
       CREATE TABLE IF NOT EXISTS profiles (
         id UUID PRIMARY KEY,
@@ -40,7 +36,6 @@ async function migrate() {
     `;
     console.log("  ✅ Created profiles table");
 
-    // Create groups table
     await sql`
       CREATE TABLE IF NOT EXISTS groups (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -52,7 +47,6 @@ async function migrate() {
     `;
     console.log("  ✅ Created groups table");
 
-    // Create group_members table
     await sql`
       CREATE TABLE IF NOT EXISTS group_members (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -65,7 +59,6 @@ async function migrate() {
     `;
     console.log("  ✅ Created group_members table");
 
-    // Create group_schedules table
     await sql`
       CREATE TABLE IF NOT EXISTS group_schedules (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -85,7 +78,6 @@ async function migrate() {
     `;
     console.log("  ✅ Created group_schedules table");
 
-    // Create invite_links table
     await sql`
       CREATE TABLE IF NOT EXISTS invite_links (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -100,7 +92,6 @@ async function migrate() {
     `;
     console.log("  ✅ Created invite_links table");
 
-    // Create schedule_interests table
     await sql`
       CREATE TABLE IF NOT EXISTS schedule_interests (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -114,7 +105,6 @@ async function migrate() {
     `;
     console.log("  ✅ Created schedule_interests table");
 
-    // Create group_activities table
     await sql`
       CREATE TABLE IF NOT EXISTS group_activities (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -127,7 +117,6 @@ async function migrate() {
     `;
     console.log("  ✅ Created group_activities table");
 
-    // Create schedule_votes table
     await sql`
       CREATE TABLE IF NOT EXISTS schedule_votes (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -140,7 +129,6 @@ async function migrate() {
     `;
     console.log("  ✅ Created schedule_votes table");
 
-    // Create indexes
     console.log("\n📊 Creating indexes...");
 
     await sql`CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email)`;
@@ -157,7 +145,6 @@ async function migrate() {
 
     console.log("  ✅ All indexes created");
 
-    // Verify tables exist
     console.log("\n📋 Verifying tables...");
     const tables = await sql`
       SELECT table_name 

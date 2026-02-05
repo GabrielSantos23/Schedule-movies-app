@@ -12,14 +12,12 @@ const pool = new Pool({
 async function runMigration() {
   console.log("Running Better Auth migration...");
 
-  // Read the migration file
   const migrationPath = path.join(
     __dirname,
     "../better-auth_migrations/2026-02-04T20-47-44.107Z.sql",
   );
   const migrationSql = fs.readFileSync(migrationPath, "utf-8");
 
-  // Split by statements and run each
   const statements = migrationSql
     .split(";")
     .map((s) => s.trim())

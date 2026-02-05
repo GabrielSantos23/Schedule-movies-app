@@ -1,11 +1,9 @@
 import { neon, NeonQueryFunction } from "@neondatabase/serverless";
 
-// Create a Neon database client
 const sql = neon(process.env.DATABASE_URL!);
 
 export { sql };
 
-// Types for database entities
 export interface Profile {
   id: string;
   email: string | null;
@@ -86,9 +84,6 @@ export interface ScheduleVote {
   created_at: string;
 }
 
-// Database operations
-
-// Profiles
 export const db = {
   profiles: {
     async getById(id: string): Promise<Profile | null> {
@@ -238,7 +233,7 @@ export const db = {
       release_date?: string;
       first_air_date?: string;
       media_type?: string;
-      genres?: string[]; // JSON array of strings
+      genres?: string[];
       release_year?: number;
     }): Promise<GroupSchedule> {
       const result = await sql`

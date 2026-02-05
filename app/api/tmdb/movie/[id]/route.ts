@@ -5,35 +5,34 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
 
   if (!TMDB_API_KEY) {
     return NextResponse.json(
       { error: "TMDB API key not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
   try {
-    // Fetch movie details with credits, videos, recommendations, and similar movies
     const [movieRes, creditsRes, videosRes, similarRes, providersRes] =
       await Promise.all([
         fetch(
-          `${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=en-US`
+          `${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=en-US`,
         ),
         fetch(
-          `${TMDB_BASE_URL}/movie/${id}/credits?api_key=${TMDB_API_KEY}&language=en-US`
+          `${TMDB_BASE_URL}/movie/${id}/credits?api_key=${TMDB_API_KEY}&language=en-US`,
         ),
         fetch(
-          `${TMDB_BASE_URL}/movie/${id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
+          `${TMDB_BASE_URL}/movie/${id}/videos?api_key=${TMDB_API_KEY}&language=en-US`,
         ),
         fetch(
-          `${TMDB_BASE_URL}/movie/${id}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`
+          `${TMDB_BASE_URL}/movie/${id}/similar?api_key=${TMDB_API_KEY}&language=en-US&page=1`,
         ),
         fetch(
-          `${TMDB_BASE_URL}/movie/${id}/watch/providers?api_key=${TMDB_API_KEY}`
+          `${TMDB_BASE_URL}/movie/${id}/watch/providers?api_key=${TMDB_API_KEY}`,
         ),
       ]);
 
@@ -47,10 +46,9 @@ export async function GET(
     const similar = await similarRes.json();
     const providers = await providersRes.json();
 
-    // Get trailer (prefer official trailers)
     const trailer =
       videos.results?.find(
-        (v: any) => v.type === "Trailer" && v.site === "YouTube"
+        (v: any) => v.type === "Trailer" && v.site === "YouTube",
       ) || videos.results?.[0];
 
     return NextResponse.json({
@@ -64,7 +62,7 @@ export async function GET(
                 c.job === "Director" ||
                 c.job === "Producer" ||
                 c.job === "Screenplay" ||
-                c.job === "Writer"
+                c.job === "Writer",
             )
             .slice(0, 5) || [],
       },
@@ -81,7 +79,7 @@ export async function GET(
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch movie details" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

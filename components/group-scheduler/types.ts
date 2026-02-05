@@ -17,7 +17,7 @@ export interface ScheduleInterest {
   id: string;
   schedule_id: string;
   user_id: string;
-  vote_type: number; // 1 | -1
+  vote_type: number;
   profiles?: { email: string; full_name?: string; avatar_url?: string };
 }
 
@@ -81,7 +81,6 @@ export function parseLocalDate(
   if (dateStr instanceof Date) return dateStr;
   if (typeof dateStr !== "string") return new Date(dateStr);
 
-  // Handle ISO strings that might be full timestamps
   if (dateStr.includes("T")) {
     return new Date(dateStr);
   }

@@ -25,7 +25,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTransitionRouter } from "next-view-transitions";
 
-// Import server actions
 import {
   getGroupsByUser,
   createGroup as createGroupAction,
@@ -42,7 +41,7 @@ interface Group {
 interface AddToGroupButtonProps {
   media: {
     id: number;
-    title: string; // or name
+    title: string;
     overview: string;
     poster_path: string | null;
     vote_average: number;
@@ -57,11 +56,9 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [isAdding, setIsAdding] = useState(false);
 
-  // Create Group State
   const [isCreating, setIsCreating] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
-  // Keep supabase for auth only
   const supabase = createClient();
   const router = useTransitionRouter();
 
@@ -104,26 +101,22 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
     if (!user) return;
 
     try {
-      // 1. Create Group
       const groupData = await createGroupAction({
         name: newGroupName,
         created_by: user.id,
       });
 
-      // 2. Add Member
       await addGroupMember({
         group_id: groupData.id,
         user_id: user.id,
         role: "owner",
       });
 
-      // 3. Add to local list and select it
       setGroups([...groups, { id: groupData.id, name: groupData.name }]);
       setSelectedGroupId(groupData.id);
       setNewGroupName("");
       setIsCreating(false);
 
-      // Continue content addition automatically if it was 0 groups
       handleAddMedia(groupData.id);
     } catch (error) {
       console.error("Error creating group:", error);
@@ -152,7 +145,6 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
         media_type: media.media_type,
       });
 
-      // Log activity
       await logActivity({
         group_id: groupId,
         user_id: user.id,
@@ -195,7 +187,6 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : groups.length === 0 ? (
-            // CREATE GROUP VIEW (No groups)
             <div className="space-y-4 py-4">
               <div className="bg-muted/50 p-4 rounded-lg text-center text-sm text-muted-foreground mb-4">
                 You don't have any groups yet. Create one to start building your
@@ -222,7 +213,6 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
               </Button>
             </div>
           ) : (
-            // SELECT GROUP VIEW
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>Select Group</Label>

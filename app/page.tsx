@@ -17,7 +17,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -45,15 +44,12 @@ export default function HomePage() {
       </header>
 
       <main className="flex-1">
-        {/* Hero Section - Ajustada para o topo (items-start + pt-32) */}
         <section className="relative overflow-hidden min-h-[calc(100vh-64px)] flex items-start pt-20 lg:pt-32 pb-12">
-          {/* Background Gradients - Movidos levemente para cima para acompanhar o texto */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/20 blur-[100px] rounded-full -z-10 opacity-50 dark:opacity-30" />
           <div className="absolute top-1/2 right-0 w-[600px] h-[400px] bg-blue-500/10 blur-[100px] rounded-full -z-10 opacity-30" />
 
           <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-start">
-              {/* Coluna de Texto */}
               <div className="flex flex-col gap-6 text-center lg:text-left pt-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium w-fit mx-auto lg:mx-0 border border-primary/20">
                   <Badge
@@ -113,12 +109,10 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Coluna Visual */}
               <div className="relative mx-auto lg:mr-0 w-full max-w-[500px] lg:max-w-none perspective-1000">
                 <div className="absolute -top-12 -right-12 w-24 h-24 bg-yellow-400/20 rounded-full blur-2xl animate-pulse" />
 
                 <div className="relative grid grid-cols-2 gap-4 rotate-y-12 rotate-x-6 transform-style-3d hover:rotate-0 transition-transform duration-700 ease-out py-4">
-                  {/* Card Oppenheimer */}
                   <Card className="bg-card/50 backdrop-blur border-primary/20 shadow-2xl translate-y-4">
                     <CardContent className="p-2">
                       <img
@@ -133,7 +127,6 @@ export default function HomePage() {
                     </CardContent>
                   </Card>
 
-                  {/* Card Interstellar */}
                   <Card className="bg-card/80 backdrop-blur border-primary/20 shadow-2xl -translate-y-4 z-10 scale-105">
                     <div className="absolute -top-3 -right-3 h-8 w-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg z-20">
                       <Star className="h-4 w-4 fill-current" />
@@ -160,37 +153,12 @@ export default function HomePage() {
                       </div>
                     </CardContent>
                   </Card>
-
-                  {/* Card Inception */}
-                  {/* <Card className="bg-card/50 backdrop-blur border-primary/20 shadow-2xl translate-y-2 opacity-80">
-                    <CardContent className="p-2">
-                      <img
-                        src="https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg"
-                        alt="Inception"
-                        className="rounded-lg w-full aspect-[2/3] object-cover shadow-md mb-2"
-                      />
-                    </CardContent>
-                  </Card> */}
-
-                  {/* Floating Notification */}
-                  {/* <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background/95 backdrop-blur p-4 rounded-xl shadow-2xl border flex items-center gap-3 w-[240px] z-30 animate-bounce-slow">
-                    <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">Ready to watch!</p>
-                      <p className="text-xs text-muted-foreground">
-                        Group "Cinema Club" voted
-                      </p>
-                    </div>
-                  </div> */}
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
         <section id="features" className="py-20 lg:py-32 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-2xl mx-auto mb-16">
@@ -240,7 +208,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Discovery Section (Mockup) */}
         <section className="py-20">
           <div className="container mx-auto px-4">
             <div className="relative rounded-[2rem] bg-gradient-to-b from-slate-900 to-slate-950 overflow-hidden border border-slate-800 shadow-2xl">
@@ -288,7 +255,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Final CTA */}
         <section className="py-20 lg:py-32">
           <div className="container mx-auto px-4 text-center">
             <div className="max-w-3xl mx-auto space-y-8">
@@ -321,7 +287,6 @@ export default function HomePage() {
         </section>
       </main>
 
-      {/* Footer */}
       <footer className="border-t py-12 bg-muted/20">
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">

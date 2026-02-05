@@ -65,7 +65,6 @@ import {
   parseLocalDate,
 } from "./types";
 
-// Import server actions
 import {
   getGroup,
   getGroupMembers,
@@ -87,7 +86,6 @@ export default function GroupScheduler({
   user: User;
   groupId: string;
 }) {
-  // --- STATE ---
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [isAddMovieOpen, setIsAddMovieOpen] = useState(false);
   const [group, setGroup] = useState<Group | null>(null);
@@ -105,7 +103,6 @@ export default function GroupScheduler({
   const [copied, setCopied] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
-  // Editing State
   const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<GroupSchedule | null>(
     null,
@@ -114,7 +111,6 @@ export default function GroupScheduler({
   const [editTime, setEditTime] = useState("20:00");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  // Loading States
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [addingMovieId, setAddingMovieId] = useState<number | null>(null);
   const [processingScheduleId, setProcessingScheduleId] = useState<
@@ -126,7 +122,6 @@ export default function GroupScheduler({
 
   const [activities, setActivities] = useState<GroupActivity[]>([]);
 
-  // View/Filter State
   const [filterMode, setFilterMode] = useState<"all" | "watched" | "unwatched">(
     "unwatched",
   );
@@ -183,11 +178,10 @@ export default function GroupScheduler({
     };
 
     calculateTimeLeft();
-    const timer = setInterval(calculateTimeLeft, 60000); // update every minute
+    const timer = setInterval(calculateTimeLeft, 60000);
     return () => clearInterval(timer);
   }, [nextSession]);
 
-  // Filter List (exclude next session mostly, or show based on filter)
   filteredSchedules = filteredSchedules.filter((s) => s.id !== nextSession?.id);
 
   const loadGroup = async () => {
@@ -238,7 +232,6 @@ export default function GroupScheduler({
     return member?.profiles?.avatar_url;
   };
 
-  // --- ACTIONS ---
   const searchMovies = async (page: number = 1) => {
     if (!searchQuery.trim()) return;
     setIsLoading(true);
@@ -315,8 +308,6 @@ export default function GroupScheduler({
     setProcessingAction("watch");
     try {
       await setScheduleWatched(schedule.id, !schedule.watched);
-      // If marking as watched, maybe log it?
-      // logActivityAction("watched_movie", schedule.movie_title);
       loadSchedules();
     } finally {
       setProcessingScheduleId(null);
@@ -377,10 +368,7 @@ export default function GroupScheduler({
     }
   };
 
-  const handleVote = async (
-    scheduleId: string,
-    voteType: number, // 1 or -1
-  ) => {
+  const handleVote = async (scheduleId: string, voteType: number) => {
     const schedule = schedules.find((s) => s.id === scheduleId);
     if (!schedule) return;
 
@@ -392,10 +380,8 @@ export default function GroupScheduler({
       const myInterest = interests.find((i) => i.user_id === user.id);
       const currentVote = myInterest?.vote_type || null;
 
-      // Call updated action
       await toggleScheduleInterest(scheduleId, user.id, currentVote, voteType);
 
-      // Log only if it's a new vote (not untoggling)
       if (currentVote !== voteType) {
         if (voteType === 1)
           logActivityAction("showed_interest", schedule.movie_title);
@@ -408,7 +394,6 @@ export default function GroupScheduler({
     }
   };
 
-  // Filter List (exclude next session mostly, or show based on filter)
   filteredSchedules = filteredSchedules.filter((s) => s.id !== nextSession?.id);
 
   if (filterMode === "unwatched") {
@@ -417,7 +402,6 @@ export default function GroupScheduler({
     filteredSchedules = filteredSchedules.filter((s) => s.watched);
   }
 
-  // Sorting
   if (sortBy === "votes") {
     filteredSchedules.sort((a, b) => {
       const getScore = (s: GroupSchedule) => {
@@ -434,7 +418,6 @@ export default function GroupScheduler({
       (a, b) => (b.vote_average || 0) - (a.vote_average || 0),
     );
   } else {
-    // Default: Date desc (newest first)
     filteredSchedules.sort(
       (a, b) =>
         new Date(b.created_at || 0).getTime() -
@@ -455,7 +438,6 @@ export default function GroupScheduler({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Dialogs */}
       <Dialog open={isAddMovieOpen} onOpenChange={setIsAddMovieOpen}>
         <DialogContent className="sm:max-w-[700px] h-[70vh] flex flex-col p-0 gap-0 overflow-hidden">
           <div className="p-6 pb-4 border-b">
@@ -550,7 +532,6 @@ export default function GroupScheduler({
                               disabled={addingMovieId === movie.id}
                               onClick={() => {
                                 scheduleMovie(movie);
-                                // setIsAddMovieOpen(false); // Don't close immediately to show spinner
                               }}
                             >
                               {addingMovieId === movie.id ? (
@@ -676,13 +657,9 @@ export default function GroupScheduler({
       </Dialog>
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* --- 1. Header (Group Info) --- */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-border/40">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20">
-                {group?.name.substring(0, 2).toUpperCase()}
-              </div>
               <h1 className="text-3xl font-bold tracking-tight">
                 {group?.name}
               </h1>
@@ -705,12 +682,9 @@ export default function GroupScheduler({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* --- LEFT COLUMNS (Main) --- */}
           <div className="lg:col-span-2 space-y-10">
-            {/* 2. Next Session Card */}
             {nextSession && (
               <div className="relative overflow-hidden rounded-3xl bg-card border border-border/50 shadow-2xl">
-                {/* Backdrop Blur */}
                 <div className="absolute inset-0">
                   {nextSession.movie_poster && (
                     <img
@@ -718,7 +692,6 @@ export default function GroupScheduler({
                       className="w-full h-full object-cover opacity-20 blur-xl scale-110"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent" />
                 </div>
 
                 <div className="relative p-8 md:p-10 flex flex-col md:flex-row gap-8 items-center md:items-start z-10">
@@ -838,7 +811,6 @@ export default function GroupScheduler({
               </div>
             )}
 
-            {/* 3. Group Watchlist */}
             <div className="space-y-4">
               <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur z-20 py-2">
                 <h3 className="text-xl font-bold flex items-center gap-2">
@@ -856,7 +828,6 @@ export default function GroupScheduler({
                     </PopoverTrigger>
                     <PopoverContent align="end" className="w-56 p-2">
                       <div className="space-y-2">
-                        {/* View Mode Toggle */}
                         <h4 className="font-medium text-xs text-muted-foreground px-2 mb-1">
                           Display
                         </h4>
@@ -968,7 +939,7 @@ export default function GroupScheduler({
                           className="group relative rounded-xl bg-card border border-border/40 overflow-hidden hover:border-border transition-all hover:shadow-lg"
                         >
                           <Link
-                            href={`/${schedule.media_type === "tv" ? "tv" : "movie"}/${schedule.movie_id}`}
+                            href={`/${schedule.media_type === "tv" ? "series" : "movie"}/${schedule.movie_id}`}
                           >
                             <div className="aspect-[2/3] bg-muted relative cursor-pointer">
                               {schedule.movie_poster ? (
@@ -1114,7 +1085,7 @@ export default function GroupScheduler({
                       >
                         <div className="shrink-0 aspect-[2/3] w-24 sm:w-20 rounded-lg overflow-hidden bg-muted shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
                           <Link
-                            href={`/${schedule.media_type === "tv" ? "tv" : "movie"}/${schedule.movie_id}`}
+                            href={`/${schedule.media_type === "tv" ? "series" : "movie"}/${schedule.movie_id}`}
                           >
                             {schedule.movie_poster && (
                               <img
@@ -1130,7 +1101,7 @@ export default function GroupScheduler({
                             <div className="flex items-start justify-between gap-4">
                               <div>
                                 <Link
-                                  href={`/${schedule.media_type === "tv" ? "tv" : "movie"}/${schedule.movie_id}`}
+                                  href={`/${schedule.media_type === "tv" ? "series" : "movie"}/${schedule.movie_id}`}
                                 >
                                   <h4 className="text-lg font-bold leading-tight line-clamp-1 hover:text-primary transition-colors cursor-pointer">
                                     {schedule.movie_title}
@@ -1245,7 +1216,6 @@ export default function GroupScheduler({
                               </span>
                             </div>
 
-                            {/* Real Genres */}
                             {schedule.genres && schedule.genres.length > 0 && (
                               <div className="flex flex-wrap gap-2 mt-3">
                                 {schedule.genres.slice(0, 3).map((g) => (
@@ -1313,7 +1283,6 @@ export default function GroupScheduler({
             </div>
           </div>
 
-          {/* --- RIGHT COLUMN (Sidebar) --- */}
           <div className="space-y-8">
             <div className="rounded-xl border border-border/50 bg-card flex flex-col h-[400px] overflow-hidden">
               <div className="p-4 border-b border-border/50 flex items-center justify-between shrink-0">
@@ -1389,7 +1358,6 @@ export default function GroupScheduler({
               </ScrollArea>
             </div>
 
-            {/* Members List */}
             <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
               <div className="p-4 border-b border-border/50">
                 <h3 className="font-semibold">Members ({members.length})</h3>

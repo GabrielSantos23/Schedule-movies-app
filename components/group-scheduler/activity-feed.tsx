@@ -18,7 +18,7 @@ export function ActivityFeed({
 }: ActivityFeedProps) {
   const getUserName = (
     userId: string,
-    profile?: { email: string; full_name?: string }
+    profile?: { email: string; full_name?: string },
   ) => {
     if (userId === currentUserId) return "You";
     if (profile?.full_name) return profile.full_name;
@@ -34,7 +34,6 @@ export function ActivityFeed({
     return "Member";
   };
 
-  // Helper para formatar o texto com estilo de "link" para as entidades
   const renderActionContent = (activity: GroupActivity) => {
     const movieLink = (
       <span className="text-primary hover:underline cursor-pointer font-medium">
@@ -93,7 +92,6 @@ export function ActivityFeed({
 
         return (
           <div key={activity.id} className="flex gap-3 items-start group">
-            {/* Avatar Minimalista */}
             <div className="shrink-0">
               <Avatar className="h-8 w-8 border-none bg-secondary/50">
                 {avatarUrl && <AvatarImage src={avatarUrl} />}
@@ -103,7 +101,6 @@ export function ActivityFeed({
               </Avatar>
             </div>
 
-            {/* Texto da Atividade */}
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-foreground/90">

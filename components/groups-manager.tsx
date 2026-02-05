@@ -54,7 +54,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Import server actions
 import {
   getGroupsByUser,
   getUserMemberships,
@@ -89,13 +88,10 @@ export default function GroupsManager({ user }: { user: User }) {
 
   const loadGroups = async () => {
     try {
-      // Get user memberships
       const memberships = await getUserMemberships(user.id);
 
-      // Get group details
       const groupsData = await getGroupsByUser(user.id);
 
-      // Merge with roles
       const groupsWithRole = groupsData.map((group) => {
         const membership = memberships.find((m) => m.group_id === group.id);
         return {
@@ -116,14 +112,12 @@ export default function GroupsManager({ user }: { user: User }) {
     setIsLoading(true);
 
     try {
-      // Create the group
       const groupData = await createGroupAction({
         name: newGroupName,
         description: newGroupDescription || undefined,
         created_by: user.id,
       });
 
-      // Add creator as owner
       await addGroupMember({
         group_id: groupData.id,
         user_id: user.id,
@@ -221,7 +215,6 @@ export default function GroupsManager({ user }: { user: User }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edit Group Dialog */}
       <Dialog
         open={!!editingGroup}
         onOpenChange={(open) => !open && setEditingGroup(null)}
@@ -263,7 +256,6 @@ export default function GroupsManager({ user }: { user: User }) {
         </DialogContent>
       </Dialog>
 
-      {/* Hero Section */}
       <div className="bg-muted/30 border-b">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
