@@ -34,7 +34,12 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: ["http://localhost:3000", "http://localhost:3001"],
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://schedule-movies-app.vercel.app",
+    process.env.NEXT_PUBLIC_APP_URL || "",
+  ],
   databaseHooks: {
     user: {
       create: {
