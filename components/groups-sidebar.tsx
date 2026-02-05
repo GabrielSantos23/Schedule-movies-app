@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,7 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Loader2, Film, Pencil, Trash2 } from "lucide-react";
 import { Link, useTransitionRouter } from "next-view-transitions";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import {
   Tooltip,
@@ -41,6 +40,26 @@ import {
 } from "@/components/ui/tooltip";
 import { SearchOverlay } from "@/components/search-overlay";
 import { Search } from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+
+import {
+  getGroupsByUser,
+  getUserMemberships,
+  createGroup as createGroupAction,
+  updateGroup as updateGroupAction,
+  deleteGroup as deleteGroupAction,
+  addGroupMember,
+} from "@/lib/actions";
 
 interface Group {
   id: string;
@@ -64,6 +83,12 @@ export default function GroupsSidebar({
   initialSearchOpen,
   initialSearchQuery,
 }: GroupsSidebarProps) {
+  const pathname = usePathname();
+  // Derive selected group ID from prop OR pathname
+  const derivedGroupId =
+    currentGroupId ||
+    (pathname?.startsWith("/groups/") ? pathname.split("/")[2] : undefined);
+
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -72,17 +97,14 @@ export default function GroupsSidebar({
   const [isCreating, setIsCreating] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(initialSearchOpen || false);
 
-  // Edit state
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Delete state
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const supabase = createClient();
   const router = useTransitionRouter();
 
   useEffect(() => {
@@ -91,28 +113,23 @@ export default function GroupsSidebar({
 
   const loadGroups = async () => {
     setIsLoading(true);
-    const { data: memberData, error: memberError } = await supabase
-      .from("group_members")
-      .select(
-        "group_id, role, groups(id, name, description, created_by, created_at)"
-      )
-      .eq("user_id", user.id);
+    try {
+      const memberships = await getUserMemberships(user.id);
 
-    if (memberError) {
-      setIsLoading(false);
-      return;
+      const groupsData = await getGroupsByUser(user.id);
+
+      const groupsWithRole = groupsData.map((group) => {
+        const membership = memberships.find((m) => m.group_id === group.id);
+        return {
+          ...group,
+          role: membership?.role || "member",
+        };
+      });
+
+      setGroups(groupsWithRole as Group[]);
+    } catch (error) {
+      console.error("Error loading groups:", error);
     }
-
-    const groupsWithRole = memberData.map((item: any) => ({
-      id: item.groups.id,
-      name: item.groups.name,
-      description: item.groups.description,
-      created_by: item.groups.created_by,
-      created_at: item.groups.created_at,
-      role: item.role,
-    }));
-
-    setGroups(groupsWithRole);
     setIsLoading(false);
   };
 
@@ -121,39 +138,30 @@ export default function GroupsSidebar({
 
     setIsCreating(true);
 
-    const { data: groupData, error: groupError } = await supabase
-      .from("groups")
-      .insert({
+    try {
+      const groupData = await createGroupAction({
         name: newGroupName,
-        description: newGroupDescription || null,
+        description: newGroupDescription || undefined,
         created_by: user.id,
-      })
-      .select()
-      .single();
+      });
 
-    if (groupError) {
+      await addGroupMember({
+        group_id: groupData.id,
+        user_id: user.id,
+        role: "owner",
+      });
+
+      setNewGroupName("");
+      setNewGroupDescription("");
+      setIsCreateDialogOpen(false);
       setIsCreating(false);
-      return;
-    }
+      loadGroups();
 
-    const { error: memberError } = await supabase.from("group_members").insert({
-      group_id: groupData.id,
-      user_id: user.id,
-      role: "owner",
-    });
-
-    if (memberError) {
+      window.location.href = `/groups/${groupData.id}`;
+    } catch (error) {
+      console.error("Error creating group:", error);
       setIsCreating(false);
-      return;
     }
-
-    setNewGroupName("");
-    setNewGroupDescription("");
-    setIsCreateDialogOpen(false);
-    setIsCreating(false);
-    loadGroups();
-
-    window.location.href = `/groups/${groupData.id}`;
   };
 
   const handleEditGroup = (group: Group) => {
@@ -167,22 +175,19 @@ export default function GroupsSidebar({
 
     setIsEditing(true);
 
-    const { error } = await supabase
-      .from("groups")
-      .update({
+    try {
+      await updateGroupAction(editingGroup.id, {
         name: editName,
-        description: editDescription || null,
-      })
-      .eq("id", editingGroup.id);
+        description: editDescription || undefined,
+      });
 
-    if (error) {
+      setEditingGroup(null);
       setIsEditing(false);
-      return;
+      loadGroups();
+    } catch (error) {
+      console.error("Error updating group:", error);
+      setIsEditing(false);
     }
-
-    setEditingGroup(null);
-    setIsEditing(false);
-    loadGroups();
   };
 
   const handleDeleteGroup = async () => {
@@ -190,43 +195,26 @@ export default function GroupsSidebar({
 
     setIsDeleting(true);
 
-    // First delete all group members
-    await supabase
-      .from("group_members")
-      .delete()
-      .eq("group_id", groupToDelete.id);
+    try {
+      await deleteGroupAction(groupToDelete.id);
 
-    // Then delete all schedules
-    await supabase
-      .from("group_schedules")
-      .delete()
-      .eq("group_id", groupToDelete.id);
+      setGroupToDelete(null);
+      setIsDeleting(false);
 
-    // Then delete the group
-    const { error } = await supabase
-      .from("groups")
-      .delete()
-      .eq("id", groupToDelete.id);
-
-    if (error) {
+      if (derivedGroupId === groupToDelete.id) {
+        const remainingGroups = groups.filter((g) => g.id !== groupToDelete.id);
+        if (remainingGroups.length > 0) {
+          window.location.href = `/groups/${remainingGroups[0].id}`;
+        } else {
+          window.location.href = "/groups";
+        }
+      } else {
+        loadGroups();
+      }
+    } catch (error) {
+      console.error("Error deleting group:", error);
       setIsDeleting(false);
       setGroupToDelete(null);
-      return;
-    }
-
-    setGroupToDelete(null);
-    setIsDeleting(false);
-
-    // If we deleted the current group, redirect to first available group
-    if (currentGroupId === groupToDelete.id) {
-      const remainingGroups = groups.filter((g) => g.id !== groupToDelete.id);
-      if (remainingGroups.length > 0) {
-        window.location.href = `/groups/${remainingGroups[0].id}`;
-      } else {
-        window.location.href = "/groups";
-      }
-    } else {
-      loadGroups();
     }
   };
 
@@ -252,9 +240,8 @@ export default function GroupsSidebar({
     return colors[index];
   };
 
-  // Shared group button component with context menu
   const GroupButton = ({ group }: { group: Group }) => {
-    const isActive = currentGroupId === group.id;
+    const isActive = derivedGroupId === group.id;
     const isOwner = group.role === "owner";
 
     return (
@@ -296,7 +283,6 @@ export default function GroupsSidebar({
     );
   };
 
-  // Create button shared component - only the trigger button
   const CreateButton = () => (
     <button
       onClick={() => setIsCreateDialogOpen(true)}
@@ -308,7 +294,6 @@ export default function GroupsSidebar({
 
   return (
     <>
-      {/* Create Group Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -354,7 +339,6 @@ export default function GroupsSidebar({
         </DialogContent>
       </Dialog>
 
-      {/* Edit Group Dialog */}
       <Dialog
         open={!!editingGroup}
         onOpenChange={(open) => !open && setEditingGroup(null)}
@@ -407,7 +391,6 @@ export default function GroupsSidebar({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Group Alert Dialog */}
       <AlertDialog
         open={!!groupToDelete}
         onOpenChange={(open) => !open && setGroupToDelete(null)}
@@ -440,123 +423,102 @@ export default function GroupsSidebar({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Desktop Sidebar - hidden on mobile */}
-      <TooltipProvider delayDuration={100}>
-        <div className="hidden md:flex fixed left-0 top-0 h-full w-[72px] bg-muted/30 backdrop-blur-xl border-r border-border/50 flex-col items-center py-4 z-40">
-          {/* Logo */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/explore"
-                className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 mb-2 shrink-0 transition-transform hover:scale-105"
-              >
-                <Film className="h-6 w-6" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>
-              <p>Explore Movies & TV Shows</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Search Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
+      <Sidebar collapsible="icon" variant="inset">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link href="/explore">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Film className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">Netflux</span>
+                    <span className="truncate text-xs">Groups</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip="Search"
                 onClick={() => setIsSearchOpen(true)}
-                className="h-12 w-12 rounded-2xl bg-muted/50 hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary mb-2 shrink-0 transition-all hover:scale-105"
               >
-                <Search className="h-6 w-6" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>
-              <p>Search</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Divider */}
-          <div className="w-8 h-[2px] bg-border/50 rounded-full mb-2 flex-shrink-0" />
-
-          {/* Groups List */}
-          <div className="flex-1 min-h-0 flex flex-col items-center gap-2 overflow-y-auto scrollbar-hide w-full px-3">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              groups.map((group) => (
-                <Tooltip key={group.id}>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <GroupButton group={group} />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={10}>
-                    <p className="font-medium max-w-[200px] truncate">
-                      {group.name}
-                    </p>
-                    {group.description && (
-                      <p className="text-xs text-muted-foreground max-w-[200px] truncate">
-                        {group.description}
-                      </p>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              ))
-            )}
-          </div>
-
-          {/* Divider */}
-          <div className="w-8 h-[2px] bg-border/50 rounded-full my-2 flex-shrink-0" />
-
-          {/* Create Button */}
-          <div className="flex-shrink-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <CreateButton />
+                <Search className="h-4 w-4" />
+                <span>Search</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Your Groups</SidebarGroupLabel>
+            <SidebarMenu>
+              {isLoading ? (
+                <div className="flex justify-center p-4">
+                  <Loader2 className="animate-spin h-4 w-4" />
                 </div>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={10}>
-                <p>Create New Group</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-      </TooltipProvider>
-
-      {/* Mobile Header - shown only on mobile */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background backdrop-blur-3xl border-b border-border/50 flex items-center px-4 gap-3 z-40">
-        {/* Logo */}
-        <Link
-          href="/explore"
-          className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 shrink-0 transition-transform hover:scale-105"
-        >
-          <Film className="h-5 w-5" />
-        </Link>
-
-        {/* Divider */}
-        <div className="w-[2px] h-8 bg-border/50 rounded-full flex-shrink-0" />
-
-        {/* Groups List - horizontal scroll */}
-        <div className="flex-1 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          ) : (
-            groups.map((group) => <GroupButton key={group.id} group={group} />)
-          )}
-        </div>
-
-        {/* Mobile Search Button */}
-        <button
-          onClick={() => setIsSearchOpen(true)}
-          className="h-10 w-10 rounded-xl bg-muted/50 hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary shrink-0 transition-transform active:scale-95"
-        >
-          <Search className="h-5 w-5" />
-        </button>
-
-        {/* Create Button */}
-        <CreateButton />
-      </div>
+              ) : (
+                groups.map((group) => (
+                  <SidebarMenuItem key={group.id}>
+                    <ContextMenu>
+                      <ContextMenuTrigger asChild>
+                        <SidebarMenuButton
+                          asChild
+                          tooltip={group.name}
+                          isActive={derivedGroupId === group.id}
+                        >
+                          <a href={`/groups/${group.id}`}>
+                            <span className="flex items-center justify-center font-bold text-xs bg-muted text-muted-foreground w-6 h-6 rounded mr-1">
+                              {getInitials(group.name)}
+                            </span>
+                            <span className="truncate font-medium">
+                              {group.name}
+                            </span>
+                          </a>
+                        </SidebarMenuButton>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent className="w-48">
+                        <ContextMenuItem
+                          onClick={() => handleEditGroup(group)}
+                          className="gap-2"
+                        >
+                          <Pencil className="h-4 w-4" /> Edit Group
+                        </ContextMenuItem>
+                        {group.role === "owner" && (
+                          <>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem
+                              onClick={() => setGroupToDelete(group)}
+                              className="gap-2 text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" /> Delete Group
+                            </ContextMenuItem>
+                          </>
+                        )}
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  </SidebarMenuItem>
+                ))
+              )}
+            </SidebarMenu>
+          </SidebarGroup>
+          <SidebarGroup className="mt-auto">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Create Group"
+                  onClick={() => setIsCreateDialogOpen(true)}
+                >
+                  <Plus />
+                  <span>Create Group</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter>{/* User profile could go here */}</SidebarFooter>
+      </Sidebar>
 
       {isSearchOpen && (
         <SearchOverlay

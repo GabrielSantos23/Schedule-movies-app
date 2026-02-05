@@ -6,11 +6,11 @@ CREATE TABLE IF NOT EXISTS schedule_interests (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   schedule_id UUID NOT NULL REFERENCES group_schedules(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  interested BOOLEAN NOT NULL DEFAULT true,
+  vote_type INTEGER NOT NULL DEFAULT 1 CHECK (vote_type IN (1, -1)), -- 1 for upvote, -1 for downvote
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
-  -- Each user can only have one interest record per schedule
+  -- Each user can only have one vote record per schedule
   UNIQUE(schedule_id, user_id)
 );
 

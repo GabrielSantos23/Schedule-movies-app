@@ -25,6 +25,15 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTransitionRouter } from "next-view-transitions";
 
+// Import server actions
+import {
+  getGroupsByUser,
+  createGroup as createGroupAction,
+  addGroupMember,
+  createSchedule,
+  logActivity,
+} from "@/lib/actions";
+
 interface Group {
   id: string;
   name: string;
@@ -52,6 +61,7 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
 
+  // Keep supabase for auth only
   const supabase = createClient();
   const router = useTransitionRouter();
 
@@ -72,17 +82,14 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("group_members")
-      .select("groups(id, name)")
-      .eq("user_id", user.id);
-
-    if (!error && data) {
-      const loadedGroups = data.map((item: any) => item.groups).filter(Boolean);
-      setGroups(loadedGroups);
+    try {
+      const loadedGroups = await getGroupsByUser(user.id);
+      setGroups(loadedGroups.map((g) => ({ id: g.id, name: g.name })));
       if (loadedGroups.length === 1) {
         setSelectedGroupId(loadedGroups[0].id);
       }
+    } catch (error) {
+      console.error("Error loading groups:", error);
     }
     setIsLoading(false);
   };
@@ -96,43 +103,33 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 1. Create Group
-    const { data: groupData, error: groupError } = await supabase
-      .from("groups")
-      .insert({
+    try {
+      // 1. Create Group
+      const groupData = await createGroupAction({
         name: newGroupName,
         created_by: user.id,
-      })
-      .select()
-      .single();
+      });
 
-    if (groupError) {
+      // 2. Add Member
+      await addGroupMember({
+        group_id: groupData.id,
+        user_id: user.id,
+        role: "owner",
+      });
+
+      // 3. Add to local list and select it
+      setGroups([...groups, { id: groupData.id, name: groupData.name }]);
+      setSelectedGroupId(groupData.id);
+      setNewGroupName("");
+      setIsCreating(false);
+
+      // Continue content addition automatically if it was 0 groups
+      handleAddMedia(groupData.id);
+    } catch (error) {
+      console.error("Error creating group:", error);
       toast.error("Error creating group");
       setIsCreating(false);
-      return;
     }
-
-    // 2. Add Member
-    const { error: memberError } = await supabase.from("group_members").insert({
-      group_id: groupData.id,
-      user_id: user.id,
-      role: "owner",
-    });
-
-    if (memberError) {
-      toast.error("Error adding member");
-      setIsCreating(false);
-      return;
-    }
-
-    // 3. Add to local list and select it
-    setGroups([...groups, { id: groupData.id, name: groupData.name }]);
-    setSelectedGroupId(groupData.id);
-    setNewGroupName("");
-    setIsCreating(false);
-
-    // Continue content addition automatically if it was 0 groups
-    handleAddMedia(groupData.id);
   };
 
   const handleAddMedia = async (groupId: string = selectedGroupId) => {
@@ -144,24 +141,31 @@ export function AddToGroupButton({ media }: AddToGroupButtonProps) {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase.from("group_schedules").insert({
-      group_id: groupId,
-      user_id: user.id,
-      movie_id: media.id,
-      movie_title: media.title,
-      movie_overview: media.overview,
-      movie_poster: media.poster_path, // null is valid
-      media_type: media.media_type,
-      vote_average: media.vote_average,
-      watched: false,
-    });
+    try {
+      await createSchedule({
+        group_id: groupId,
+        user_id: user.id,
+        movie_id: media.id,
+        movie_title: media.title,
+        movie_overview: media.overview,
+        movie_poster: media.poster_path || undefined,
+        media_type: media.media_type,
+      });
 
-    if (error) {
-      toast.error(error.message);
-    } else {
+      // Log activity
+      await logActivity({
+        group_id: groupId,
+        user_id: user.id,
+        action: "added_movie",
+        movie_title: media.title,
+      });
+
       toast.success(`Added "${media.title}" to group.`);
       setIsOpen(false);
       router.refresh();
+    } catch (error: any) {
+      console.error("Error adding media:", error);
+      toast.error(error.message || "Error adding to group");
     }
     setIsAdding(false);
   };

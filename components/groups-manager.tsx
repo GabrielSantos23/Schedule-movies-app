@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/client";
+import { signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,6 +54,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Import server actions
+import {
+  getGroupsByUser,
+  getUserMemberships,
+  createGroup as createGroupAction,
+  updateGroup as updateGroupAction,
+  deleteGroup as deleteGroupAction,
+  addGroupMember,
+} from "@/lib/actions";
+
 interface Group {
   id: string;
   name: string;
@@ -70,7 +80,7 @@ export default function GroupsManager({ user }: { user: User }) {
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
+
   const router = useRouter();
 
   useEffect(() => {
@@ -78,29 +88,26 @@ export default function GroupsManager({ user }: { user: User }) {
   }, []);
 
   const loadGroups = async () => {
-    // Get all groups the user is a member of
-    const { data: memberData, error: memberError } = await supabase
-      .from("group_members")
-      .select(
-        "group_id, role, groups(id, name, description, created_by, created_at)"
-      )
-      .eq("user_id", user.id);
+    try {
+      // Get user memberships
+      const memberships = await getUserMemberships(user.id);
 
-    if (memberError) {
-      return;
+      // Get group details
+      const groupsData = await getGroupsByUser(user.id);
+
+      // Merge with roles
+      const groupsWithRole = groupsData.map((group) => {
+        const membership = memberships.find((m) => m.group_id === group.id);
+        return {
+          ...group,
+          role: membership?.role || "member",
+        };
+      });
+
+      setGroups(groupsWithRole as Group[]);
+    } catch (error) {
+      console.error("Error loading groups:", error);
     }
-
-    // Transform the data to include role
-    const groupsWithRole = memberData.map((item: any) => ({
-      id: item.groups.id,
-      name: item.groups.name,
-      description: item.groups.description,
-      created_by: item.groups.created_by,
-      created_at: item.groups.created_at,
-      role: item.role,
-    }));
-
-    setGroups(groupsWithRole);
   };
 
   const createGroup = async () => {
@@ -108,39 +115,30 @@ export default function GroupsManager({ user }: { user: User }) {
 
     setIsLoading(true);
 
-    // Create the group
-    const { data: groupData, error: groupError } = await supabase
-      .from("groups")
-      .insert({
+    try {
+      // Create the group
+      const groupData = await createGroupAction({
         name: newGroupName,
-        description: newGroupDescription || null,
+        description: newGroupDescription || undefined,
         created_by: user.id,
-      })
-      .select()
-      .single();
+      });
 
-    if (groupError) {
+      // Add creator as owner
+      await addGroupMember({
+        group_id: groupData.id,
+        user_id: user.id,
+        role: "owner",
+      });
+
+      setNewGroupName("");
+      setNewGroupDescription("");
+      setIsCreateDialogOpen(false);
       setIsLoading(false);
-      return;
-    }
-
-    // Add creator as owner
-    const { error: memberError } = await supabase.from("group_members").insert({
-      group_id: groupData.id,
-      user_id: user.id,
-      role: "owner",
-    });
-
-    if (memberError) {
+      loadGroups();
+    } catch (error) {
+      console.error("Error creating group:", error);
       setIsLoading(false);
-      return;
     }
-
-    setNewGroupName("");
-    setNewGroupDescription("");
-    setIsCreateDialogOpen(false);
-    setIsLoading(false);
-    loadGroups();
   };
 
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
@@ -151,42 +149,33 @@ export default function GroupsManager({ user }: { user: User }) {
 
     setIsLoading(true);
 
-    const { error } = await supabase
-      .from("groups")
-      .update({
+    try {
+      await updateGroupAction(editingGroup.id, {
         name: newGroupName,
-        description: newGroupDescription || null,
-      })
-      .eq("id", editingGroup.id);
+        description: newGroupDescription || undefined,
+      });
 
-    if (error) {
-      // Handle error (could add error state)
+      setEditingGroup(null);
+      setNewGroupName("");
+      setNewGroupDescription("");
       setIsLoading(false);
-      return;
+      loadGroups();
+    } catch (error) {
+      console.error("Error updating group:", error);
+      setIsLoading(false);
     }
-
-    setEditingGroup(null);
-    setNewGroupName("");
-    setNewGroupDescription("");
-    setIsLoading(false);
-    loadGroups();
   };
 
   const handleDeleteGroup = async () => {
     if (!groupToDelete) return;
 
-    const { error } = await supabase
-      .from("groups")
-      .delete()
-      .eq("id", groupToDelete.id);
-
-    if (error) {
-      // Handle error
-      return;
+    try {
+      await deleteGroupAction(groupToDelete.id);
+      setGroupToDelete(null);
+      loadGroups();
+    } catch (error) {
+      console.error("Error deleting group:", error);
     }
-
-    setGroupToDelete(null);
-    loadGroups();
   };
 
   const openEditDialog = (group: Group) => {
@@ -196,8 +185,13 @@ export default function GroupsManager({ user }: { user: User }) {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
+    await signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/");
+        },
+      },
+    });
   };
 
   return (

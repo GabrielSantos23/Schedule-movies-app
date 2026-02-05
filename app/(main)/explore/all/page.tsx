@@ -4,12 +4,10 @@ import { useEffect, useState, Suspense, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ExploreCard } from "@/components/explore/explore-card";
 import { Loader2, ChevronLeft } from "lucide-react";
-import GroupsSidebar from "@/components/groups-sidebar";
-import { createClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { MediaItem } from "@/components/explore/types";
-import { User } from "@supabase/supabase-js";
 import { useTransitionRouter } from "next-view-transitions";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 function ExploreAllContent() {
   const searchParams = useSearchParams();
@@ -20,7 +18,6 @@ function ExploreAllContent() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback(
@@ -36,15 +33,8 @@ function ExploreAllContent() {
 
       if (node) observer.current.observe(node);
     },
-    [loading, hasMore]
+    [loading, hasMore],
   );
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-  }, []);
 
   // Reset when type changes
   useEffect(() => {
@@ -58,7 +48,7 @@ function ExploreAllContent() {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `/api/tmdb/trending/paginated?type=${type}&page=${page}`
+          `/api/tmdb/trending/paginated?type=${type}&page=${page}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -68,7 +58,7 @@ function ExploreAllContent() {
             // Basic deduplication just in case
             const existingIds = new Set(prev.map((i) => i.id));
             const uniqueNewItems = newItems.filter(
-              (i: MediaItem) => !existingIds.has(i.id)
+              (i: MediaItem) => !existingIds.has(i.id),
             );
             return [...prev, ...uniqueNewItems];
           });
@@ -88,24 +78,25 @@ function ExploreAllContent() {
   const title = type === "tv" ? "Trending TV Shows" : "Trending Movies";
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* Sidebar */}
-      {user && <GroupsSidebar user={user} />}
+    <>
+      <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <SidebarTrigger className="-ml-1" />
+        <div className="w-px h-4 bg-border/50 mx-2" />
+        <div className="flex items-center gap-2 font-medium">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="h-8 w-8 mr-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          {title}
+        </div>
+      </header>
 
-      <div className="flex-1 overflow-y-auto p-4 md:ml-20">
+      <div className="flex-1 overflow-y-auto p-4">
         <div className="w-full mx-auto space-y-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-              className="rounded-full"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            <h1 className="text-2xl md:text-3xl font-bold">{title}</h1>
-          </div>
-
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-x-4 gap-y-10 w-full">
             {items.map((item, index) => {
               if (items.length === index + 1) {
@@ -138,7 +129,7 @@ function ExploreAllContent() {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

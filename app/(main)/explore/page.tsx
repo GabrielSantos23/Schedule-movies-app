@@ -4,10 +4,8 @@ import { useEffect, useState } from "react";
 import { ExploreHero } from "@/components/explore/explore-hero";
 import { ExploreRow } from "@/components/explore/explore-row";
 import { Loader2 } from "lucide-react";
-import GroupsSidebar from "@/components/groups-sidebar";
-import { createClient } from "@/lib/client";
 import { MediaItem } from "@/components/explore/types";
-import { User } from "@supabase/supabase-js";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function ExplorePage() {
   const [data, setData] = useState<{
@@ -15,7 +13,6 @@ export default function ExplorePage() {
     tv: MediaItem[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null); // To manage current user for Sidebar
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,13 +32,6 @@ export default function ExplorePage() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-  }, []);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -56,13 +46,16 @@ export default function ExplorePage() {
     ];
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {user && <GroupsSidebar user={user} />}
-
+    <>
+      <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <SidebarTrigger className="-ml-1" />
+        <div className="w-px h-4 bg-border/50 mx-2" />
+        <div className="flex items-center gap-2 font-medium">Explore</div>
+      </header>
       <div className="flex-1 overflow-y-auto">
         {heroItem && <ExploreHero item={heroItem} />}
 
-        <div className="space-y-6 pb-20 -mt-20 relative z-10">
+        <div className="space-y-6 pb-20 -mt-20 relative z-10 p-4">
           {data?.movies && (
             <ExploreRow
               title="Trending Movies"
@@ -76,6 +69,6 @@ export default function ExplorePage() {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

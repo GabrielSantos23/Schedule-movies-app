@@ -16,6 +16,19 @@ import {
 import { Film, Loader2, Sparkles, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import GroupScheduler from "./group-scheduler";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+
+// Import server actions
+import {
+  getGroupsByUser,
+  createGroup as createGroupAction,
+  addGroupMember,
+} from "@/lib/actions";
 
 interface Group {
   id: string;
@@ -36,7 +49,6 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => {
     loadGroups();
@@ -51,33 +63,30 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
 
   const loadGroups = async () => {
     setIsLoading(true);
-    const { data: memberData, error: memberError } = await supabase
-      .from("group_members")
-      .select("group_id, role, groups(id, name, description)")
-      .eq("user_id", user.id);
+    try {
+      const groupsData = await getGroupsByUser(user.id);
 
-    if (memberError) {
+      const groupsList = groupsData.map((g) => ({
+        id: g.id,
+        name: g.name,
+        description: g.description,
+      }));
+
+      setGroups(groupsList);
       setIsLoading(false);
-      return;
-    }
 
-    const groupsList = memberData.map((item: any) => ({
-      id: item.groups.id,
-      name: item.groups.name,
-      description: item.groups.description,
-    }));
+      if (!groupId && groupsList.length > 0) {
+        window.location.href = `/groups/${groupsList[0].id}`;
+        return;
+      }
 
-    setGroups(groupsList);
-    setIsLoading(false);
-
-    if (!groupId && groupsList.length > 0) {
-      window.location.href = `/groups/${groupsList[0].id}`;
-      return;
-    }
-
-    if (groupId) {
-      const group = groupsList.find((g: Group) => g.id === groupId);
-      setSelectedGroup(group || null);
+      if (groupId) {
+        const group = groupsList.find((g: Group) => g.id === groupId);
+        setSelectedGroup(group || null);
+      }
+    } catch (error) {
+      console.error("Error loading groups:", error);
+      setIsLoading(false);
     }
   };
 
@@ -86,38 +95,29 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
 
     setIsCreating(true);
 
-    const { data: groupData, error: groupError } = await supabase
-      .from("groups")
-      .insert({
+    try {
+      const groupData = await createGroupAction({
         name: newGroupName,
-        description: newGroupDescription || null,
+        description: newGroupDescription || undefined,
         created_by: user.id,
-      })
-      .select()
-      .single();
+      });
 
-    if (groupError) {
+      await addGroupMember({
+        group_id: groupData.id,
+        user_id: user.id,
+        role: "owner",
+      });
+
+      setNewGroupName("");
+      setNewGroupDescription("");
+      setIsCreateDialogOpen(false);
       setIsCreating(false);
-      return;
-    }
 
-    const { error: memberError } = await supabase.from("group_members").insert({
-      group_id: groupData.id,
-      user_id: user.id,
-      role: "owner",
-    });
-
-    if (memberError) {
+      window.location.href = `/groups/${groupData.id}`;
+    } catch (error) {
+      console.error("Error creating group:", error);
       setIsCreating(false);
-      return;
     }
-
-    setNewGroupName("");
-    setNewGroupDescription("");
-    setIsCreateDialogOpen(false);
-    setIsCreating(false);
-
-    window.location.href = `/groups/${groupData.id}`;
   };
 
   if (isLoading) {
@@ -232,27 +232,35 @@ export default function GroupsLayout({ user, groupId }: GroupsLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <SidebarProvider>
       <GroupsSidebar user={user} currentGroupId={groupId} />
-
-      <div className="pt-16 md:pt-0 md:ml-[72px]">
-        {groupId && selectedGroup ? (
-          <GroupScheduler user={user} groupId={groupId} />
-        ) : (
-          <div className="min-h-screen flex flex-col items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="h-16 w-16 mx-auto rounded-2xl bg-muted flex items-center justify-center">
-                <Film className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h2 className="text-2xl font-bold">Select a Group</h2>
-              <p className="text-muted-foreground max-w-md">
-                Choose a group from the sidebar to view and manage your movie
-                schedules.
-              </p>
-            </div>
+      <SidebarInset className="max-h-screen overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <div className="flex items-center gap-2 font-medium">
+            Schedule App
           </div>
-        )}
-      </div>
-    </div>
+        </header>
+        <div className="flex-1 p-4 pt-0 max-h-[calc(100vh-5rem)] overflow-y-auto">
+          {groupId && selectedGroup ? (
+            <GroupScheduler user={user} groupId={groupId} />
+          ) : (
+            <div className="min-h-[80vh] flex flex-col items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="h-16 w-16 mx-auto rounded-2xl bg-muted flex items-center justify-center">
+                  <Film className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h2 className="text-2xl font-bold">Select a Group</h2>
+                <p className="text-muted-foreground max-w-md">
+                  Choose a group from the sidebar to view and manage your movie
+                  schedules.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

@@ -1,23 +1,32 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/server"
-import InviteAccept from "@/components/invite-accept"
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth-server";
+import InviteAccept from "@/components/invite-accept";
 
 export default async function InvitePage({
   params,
 }: {
-  params: Promise<{ code: string }>
+  params: Promise<{ code: string }>;
 }) {
-  const supabase = await createClient()
-  const { code } = await params
+  const session = await getServerSession();
+  const { code } = await params;
 
-  const { data, error } = await supabase.auth.getUser()
-  if (error || !data?.user) {
-    redirect(`/auth/login?redirect=/invite/${code}`)
+  if (!session?.user) {
+    redirect(`/auth/login?redirect=/invite/${code}`);
   }
+
+  // Convert Better Auth user to expected format
+  const user = {
+    id: session.user.id,
+    email: session.user.email,
+    user_metadata: {
+      full_name: session.user.name,
+      avatar_url: session.user.image,
+    },
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <InviteAccept user={data.user} code={code} />
+      <InviteAccept user={user as any} code={code} />
     </div>
-  )
+  );
 }

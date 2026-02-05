@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ExploreCard } from "@/components/explore/explore-card";
 import { MediaItem } from "@/components/explore/types";
-import { Loader2 } from "lucide-react";
-import GroupsSidebar from "@/components/groups-sidebar";
-import { createClient } from "@/lib/client";
-import { User } from "@supabase/supabase-js";
-import { SearchOverlay } from "@/components/search-overlay";
+import { Loader2, ChevronLeft } from "lucide-react";
 import { Link } from "next-view-transitions";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 interface SearchResult extends Omit<MediaItem, "media_type"> {
   media_type?: "movie" | "tv" | "person";
@@ -20,20 +18,11 @@ interface SearchResult extends Omit<MediaItem, "media_type"> {
 function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
+  const router = useRouter();
 
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
 
-  // Fetch User for Sidebar
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-  }, []);
-
-  // Perform search when URL param changes
   useEffect(() => {
     if (query) {
       search(query);
@@ -46,7 +35,7 @@ function SearchContent() {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `/api/tmdb/search?query=${encodeURIComponent(q)}&type=multi`
+        `/api/tmdb/search?query=${encodeURIComponent(q)}&type=multi`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -67,20 +56,25 @@ function SearchContent() {
     "grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-x-4 gap-y-10";
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {user && (
-        <GroupsSidebar
-          user={user}
-          initialSearchOpen={true}
-          initialSearchQuery={query}
-        />
-      )}
+    <>
+      <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <SidebarTrigger className="-ml-1" />
+        <div className="w-px h-4 bg-border/50 mx-2" />
+        <div className="flex items-center gap-2 font-medium">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="h-8 w-8 mr-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          Search Results: {query}
+        </div>
+      </header>
 
-      {/* Removido o mx-auto da div interna para o grid expandir. 
-          Adicionado md:ml-20 caso sua sidebar seja fixa/absoluta para não cobrir o conteúdo.
-      */}
-      <div className="flex-1 overflow-y-auto w-full relative md:ml-20">
-        <div className="pt-24 pb-12 px-4 sm:px-8 space-y-8">
+      <div className="flex-1 overflow-y-auto w-full relative">
+        <div className="p-4 sm:p-8 space-y-8">
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -95,7 +89,6 @@ function SearchContent() {
             </div>
           ) : (
             <div className="space-y-12">
-              {/* Movies Section */}
               {movies.length > 0 && (
                 <section className="space-y-4">
                   <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -116,7 +109,6 @@ function SearchContent() {
                 </section>
               )}
 
-              {/* TV Shows Section */}
               {tvShows.length > 0 && (
                 <section className="space-y-4">
                   <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -137,7 +129,6 @@ function SearchContent() {
                 </section>
               )}
 
-              {/* People Section */}
               {people.length > 0 && (
                 <section className="space-y-4">
                   <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -183,7 +174,7 @@ function SearchContent() {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

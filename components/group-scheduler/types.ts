@@ -10,13 +10,14 @@ export interface Movie {
   first_air_date?: string;
   vote_average: number;
   media_type?: "movie" | "tv";
+  genre_ids?: number[];
 }
 
 export interface ScheduleInterest {
   id: string;
   schedule_id: string;
   user_id: string;
-  interested: boolean;
+  vote_type: number; // 1 | -1
   profiles?: { email: string; full_name?: string; avatar_url?: string };
 }
 
@@ -37,6 +38,9 @@ export interface GroupSchedule {
   vote_average?: number;
   release_date?: string;
   first_air_date?: string;
+  created_at?: string;
+  genres?: string[];
+  release_year?: number;
 }
 
 export interface Group {
@@ -70,7 +74,23 @@ export interface GroupActivity {
   profiles?: { email: string; full_name?: string; avatar_url?: string };
 }
 
-export function parseLocalDate(dateStr: string): Date {
-  const [year, month, day] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day);
+export function parseLocalDate(
+  dateStr: string | Date | null | undefined,
+): Date {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  if (typeof dateStr !== "string") return new Date(dateStr);
+
+  // Handle ISO strings that might be full timestamps
+  if (dateStr.includes("T")) {
+    return new Date(dateStr);
+  }
+
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return new Date(year, month - 1, day);
+  }
+
+  return new Date(dateStr);
 }
